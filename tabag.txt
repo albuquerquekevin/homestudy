@@ -1,0 +1,32 @@
+TABELA P_AGENDAS
+
+AGE_IDE	NUMBER(8,0)	No		1	Identificador de Agenda
+AGE_DTA_PRE	DATE	No		2	Data Prevista do Agendamento
+AGE_GRP_ORI	NUMBER(8,0)	No		3	Ide - Grupo que envia a mensagem
+AGE_GRP_DES	NUMBER(8,0)	No		4	Ide - Grupo que recebe a mensagem
+AGE_DSC	VARCHAR2(4000 BYTE)	Yes		5	Texto da Agenda
+AGE_FLG_PRI	NUMBER(1,0)	No		6	1- Prioritario 0- Normal
+AGE_FLG_ATV	NUMBER(1,0)	No		7	1- Ativo 0 - Desativado
+AGE_PRO_IDE	NUMBER(8,0)	Yes		8	FK - Ide Processos
+AGE_DTA_REA	DATE	Yes		9	Data da Realizac?o da Agenda
+AGE_FLG_REA	NUMBER(1,0)	No		10	Flag que indica realizado 1- Realizado 0 - Pendente
+AGE_QEM	VARCHAR2(15 BYTE)	No		11	Usuario que Incluiu ou alterou
+AGE_QDO	DATE	No		12	Data da inclus?o ou alterac?o
+AGE_CON_IDE	NUMBER(8,0)	Yes		13	FK Contatos - Responsavel
+AGE_QEM_DEU	VARCHAR2(15 BYTE)	Yes		14	Usuario que deu a permiss?o (Responsabilidade)
+AGE_TAG_IDE	NUMBER(8,0)	Yes		15	
+AGE_HOR_PRE	VARCHAR2(5 BYTE)	Yes		16	
+AGE_REV_FLG	NUMBER(1,0)	Yes		17	"Flag de Revis?o:  
+0 - Pendente  
+1 - Revisado"
+AGE_REV_IDE	NUMBER(8,0)	Yes		18	
+AGE_REV_QDO	DATE	Yes		19	
+AGE_QEM_REA	VARCHAR2(15 BYTE)	Yes		20	Usuario que realizou a agenda
+AGE_QDO_REA	DATE	Yes		21	Data de realizac?o da agenda
+AGE_CRE_IDE	NUMBER(8,0)	Yes		22	Identificador do Credenciado
+AGE_FLG_CAN	NUMBER(1,0)	Yes		23	Agenda que foi removida do Sistema de Correspondentes - Tabela: AGENDA_CORRESPONDENTE
+AGE_QEM_INC	VARCHAR2(15 BYTE)	Yes	USER	24	
+AGE_QDO_INC	DATE	Yes	SYSDATE	25	
+AGE_STA_IDE	NUMBER(5,0)	Yes		26	
+AGE_DTA_BAS	DATE	Yes		27	Data Base utilizada na importação, caso a exista valor foi marcada a opção de contagem de prazo automatica - pelo subtipo de agenda P_SUB_TP_AGENDAS
+AGE_FLG_AUT	NUMBER(1,0)	Yes		28	

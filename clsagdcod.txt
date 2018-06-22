@@ -1,0 +1,50 @@
+[JsonProperty("Codigo")]
+        public int Codigo { get; set; }
+
+        [JsonProperty("Data")]
+        public DateTime? Data { get; set; }
+
+        [JsonProperty("DataAtual")]
+        public DateTime? DataAtual { get; set; }
+
+        [JsonProperty("Horario")]
+        public string Horario { get; set; }
+
+        [JsonProperty("Prioritario")]
+        public Boolean Prioritario { get; set; }
+
+        [JsonProperty("AgendaAutomatica")]
+        public Boolean AgendaAutomatica { get; set; }
+
+        [JsonProperty("Detalhes")]
+        public string Detalhes { get; set; }
+
+        [JsonProperty("cProcesso")]
+        public int cProcesso { get; set; }
+
+        [JsonProperty("cTipoAgenda")]
+        public int cTipoAgenda { get; set; }
+
+        [JsonProperty("TipoAgenda")]
+        public string TipoAgenda { get; set; }
+
+        [JsonProperty("cResponsavel")]
+        public int cResponsavel { get; set; }
+
+        [JsonProperty("Responsavel")]
+        public string Responsavel { get; set; }
+
+        [JsonProperty("cRevisor")]
+        public int cRevisor { get; set; }
+
+        [JsonProperty("Revisor")]
+        public string Revisor { get; set; }
+
+        [JsonProperty("SubTipoIds")]
+        public List<int> SubTipoIds { get; set; }
+
+        [JsonProperty("cSubTipoAgenda")]
+        public int cSubTipoAgenda { get; set; }
+
+        [JsonProperty("SubTipoAgenda")]
+        public string SubTipoAgenda { get; set; }

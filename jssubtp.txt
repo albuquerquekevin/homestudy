@@ -1,0 +1,39 @@
+$(function () {
+        $('.tablesorter').tablesorter();
+    });
+
+    function PesquisarSubTipo() {
+        debugger;
+        var tipoId = $('#cTipoAgenda').val()
+        var termo = $("#txtPesquisar").val();
+        PesqSubTipo(tipoId, termo, true);
+    }
+
+    var subIdsArray = [];
+    var subNomesArray = [];
+
+    function CloseSubTipo() {
+        $("#dialogPesq2").dialog("close");
+        modalSubTipo.fecharModal();
+    }
+
+    function InserirSubTipo() {
+        debugger;
+        var selecionados = $('.item-retorno-pesqSubTipo:checkbox:checked');
+        subIdsArray = [];
+        subNomesArray = [];
+        for (i = 0; i < selecionados.length; i++) {
+            subIdsArray.push(selecionados[i].getAttribute('num'));
+            subNomesArray.push(selecionados[i].getAttribute('descr'));
+        }
+
+        $("#cSubTipoAgenda").val(subIdsArray);
+        $('#SubTipoAgenda').val(subNomesArray);
+        $("#SubTipoAgenda").parent().addClass("is-upgraded is-dirty");
+
+        CloseSubTipo();
+    }
+
+    $('.inserirFecharSubTipo').click(function (){
+        InserirSubTipo();
+    });

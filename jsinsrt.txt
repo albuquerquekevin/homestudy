@@ -1,0 +1,423 @@
+var modalObjects = function (m) {
+        var dialog = document.getElementById(m);
+        var showModal = function () {
+            this.dialog.showModal();
+        };
+        var registrarModal = function () {
+            dialogPolyfill.registerDialog(this.dialog);
+        };
+        var fecharModal = function () {
+            this.dialog.close();
+        };
+
+        return {
+            dialog: dialog,
+            showModal: showModal,
+            registrarModal: registrarModal,
+            fecharModal: fecharModal
+        }
+    }
+
+    var modalObjectsSubTipo = function (m) {
+        var dialog = document.getElementById(m);
+        var showModal = function () {
+            this.dialog.showModal();
+        };
+        var registrarModal = function () {
+            dialogPolyfill.registerDialog(this.dialog);
+        };
+        var fecharModal = function () {
+            this.dialog.close();
+        };
+
+        return {
+            dialog: dialog,
+            showModal: showModal,
+            registrarModal: registrarModal,
+            fecharModal: fecharModal
+        }
+    }
+
+    var modalP;
+    var modalSubTipo;
+
+    $(document).ready(function () {
+        modalP = new modalObjects('dialogPesqAgenda');
+        modalP.registrarModal();
+
+        $('.closeAgenda').click(function () {
+            modalP.fecharModal();
+        });
+
+        var modalAviso = new modalObjects('aviso');
+        modalAviso.registrarModal();
+
+        $('.closeA').click(function () {
+            modalAviso.fecharModal();
+        });
+
+        modalSubTipo = new modalObjectsSubTipo('dialogPesqSubTipo');
+        modalSubTipo.registrarModal();
+
+        $(function () {
+            $("#novoAgenda input[type=submit]").click(function (event) {
+                event.preventDefault();
+                debugger;
+                //for (i = 0; i < subIdsArray.length; i++) {
+                //    debugger;
+                    //$("#cSubTipoAgenda").val(subIdsArray[i]);
+                    //$('#SubTipoAgenda').val(subNomesArray[i]);
+
+                var form = document.getElementById("novoAgenda");
+                var jsonData = {};
+                jsonData.Codigo = document.getElementById("Codigo").value;
+                jsonData.Data = document.getElementById("Data").value;
+                jsonData.Horario = document.getElementById("Horario").value;
+                jsonData.Prioritario = document.getElementById("Prioritario").value;
+                jsonData.AgendaAutomatica = document.getElementById("AgendaAutomatica").value;
+                jsonData.Detalhes = document.getElementById("Detalhes").value;
+                jsonData.cProcesso = document.getElementById("cProcesso").value;
+                jsonData.cTipoAgenda = document.getElementById("cTipoAgenda").value;
+                jsonData.TipoAgenda = document.getElementById("TipoAgenda").value;
+                jsonData.cResponsavel = document.getElementById("cResponsavel").value;
+                jsonData.Responsavel = document.getElementById("Responsavel").value;
+                jsonData.cRevisor = document.getElementById("cRevisor").value;
+                jsonData.Revisor = document.getElementById("Revisor").value;
+                jsonData.SubTipoIds = subIdsArray;
+                
+                var data = JSON.stringify(jsonData);
+                $.ajax({
+                    contentType: "application/json; charset=utf-8",
+                    type: "POST",
+                    url: "../../Agenda/Novo",
+                    dataType: "json",
+                    data: data,
+                    success: function (dados) {
+                        $("#tabs-4").html(dados);
+                    },
+                    error: function (erro) {
+                        modalAviso.showModal();
+                        $('.aviso').html(response.msg);
+                        $('#aviso').css('top', '0');
+                    }
+                });
+                    //var data = $(form).serialize();
+                    //$.post(form.action, data, function (response) {
+                    //    if (response.Sucesso) {
+                    //        $.ajax({
+                    //            url: '../../Agenda/Index?id=' + $("#Identificador").val() + '&status=1',
+                    //            type: 'GET',
+                    //            cache: false,
+                    //            success: function (dados) {
+                    //                $("#tabs-4").html(dados);
+                    //            },
+                    //            error: function (erro) {
+                    //                modalAviso.showModal();
+                    //                $('.aviso').html(response.msg);
+                    //                $('#aviso').css('top', '0');
+                    //            }
+                    //        });
+                    //    }
+                    //    else {
+                    //        modalAviso.showModal();
+                    //        $('.aviso').html(response.msg);
+                    //        $('#aviso').css('top', '0');
+                    //    }
+                    //});
+                //}
+                $("#cSubTipoAgenda").val(subIdsArray);
+                $('#SubTipoAgenda').val(subNomesArray);
+                
+            });
+        });
+
+        $("#Data").datepicker({ dateFormat: 'dd/mm/yy',
+            dayNames: ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'],
+            dayNamesMin: ['D', 'S', 'T', 'Q', 'Q', 'S', 'S', 'D'],
+            dayNamesShort: ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'],
+            monthNames: ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'],
+            monthNamesShort: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
+            nextText: 'Próximo',
+            prevText: 'Anterior'
+        });
+
+        $("#Data").mask('99/99/9999');
+
+        $("#Data").change(function () {
+            $("#Horario").focus();
+        });
+
+        $("#TipoAgenda").change(function () {
+            $("#cTipoAgenda").val('');
+            $("#cSubTipoAgenda").val('');
+            $("#TipoAgenda").css('background-color', '#FFFFFF');
+            $("#SubTipoAgenda").css('background-color', '#FFFFFF');
+        });
+
+        $("#SubTipoAgenda").change(function () {
+            $("#cSubTipoAgenda").val('');
+            $("#SubTipoAgenda").css('background-color', '#FFFFFF');
+        });
+
+        $("#Responsavel").change(function () {
+            $("#cResponsavel").val('');
+            $("#Responsavel").css('background-color', '#FFFFFF');
+        });
+
+        $("#Revisor").change(function () {
+            $("#cRevisor").val('');
+            $("#Revisor").css('background-color', '#FFFFFF');
+        });
+
+        $("#Detalhes").focus();
+
+        $("#Horario").mask("99:99");
+
+        if ($('#Responsavel').val() != '')
+            $('#Responsavel').parent().addClass('is-upgraded is-dirty');
+
+        if ($('#Revisor').val() != '')
+            $('#Revisor').parent().addClass('is-upgraded is-dirty');
+
+        $('#Data').focusin(function () {
+            $('#Data').parent().addClass('is-upgraded is-dirty');
+        });
+
+        $('#Data').focusout(function () {
+            if ($('#Data').val() == '')
+                $('#Data').parent().removeClass('is-upgraded is-dirty');
+        });
+
+        $('#Horario').focusin(function () {
+            $('#Horario').parent().addClass('is-upgraded is-dirty');
+        });
+
+        $('#Horario').focusout(function () {
+            if ($('#Horario').val() == '')
+                $('#Horario').parent().removeClass('is-upgraded is-dirty');
+        });
+
+        $('#TipoAgenda').focusin(function () {
+            $('#TipoAgenda').parent().addClass('is-upgraded is-dirty');
+        });
+
+        $('#TipoAgenda').focusout(function () {
+            if ($('#TipoAgenda').val() == '')
+                $('#TipoAgenda').parent().removeClass('is-upgraded is-dirty');
+        });
+
+        $('#TipoAgenda').keyup(function (e) {
+            if (e.keyCode == 8) {
+                $("#cTipoAgenda").val('');
+                $('#TipoAgenda').val('');
+            }
+        });
+
+        $('#SubTipoAgenda').focusin(function () {
+            $('#SubTipoAgenda').parent().addClass('is-upgraded is-dirty');
+        });
+
+        $('#SubTipoAgenda').focusout(function () {
+            if ($('#SubTipoAgenda').val() == '')
+                $('#SubTipoAgenda').parent().removeClass('is-upgraded is-dirty');
+        });
+
+        $('#SubTipoAgenda').keyup(function (e) {
+            if (e.keyCode == 8) {
+                $("#cSubTipoAgenda").val('');
+                $('#SubTipoAgenda').val('');
+            }
+        });
+
+        $('#Responsavel').focusin(function () {
+            $('#Responsavel').parent().addClass('is-upgraded is-dirty');
+        });
+
+        $('#Responsavel').focusout(function () {
+            if ($('#Responsavel').val() == '')
+                $('#Responsavel').parent().removeClass('is-upgraded is-dirty');
+        });
+
+        $('#Responsavel').keyup(function (e) {
+            if (e.keyCode == 8) {
+                $("#cResponsavel").val('');
+                $('#Responsavel').val('');
+            }
+        });
+
+        $('#Revisor').focusin(function () {
+            $('#Revisor').parent().addClass('is-upgraded is-dirty');
+        });
+
+        $('#Revisor').focusout(function () {
+            if ($('#Revisor').val() == '')
+                $('#Revisor').parent().removeClass('is-upgraded is-dirty');
+        });
+
+        $('#Revisor').keyup(function (e) {
+            if (e.keyCode == 8) {
+                $("#cRevisor").val('');
+                $('#Revisor').val('');
+            }
+        });
+
+        $('#Detalhes').focusin(function () {
+            $('#Detalhes').parent().addClass('is-upgraded is-dirty');
+        });
+
+        $('#Detalhes').focusout(function () {
+            if ($('#Detalhes').val() == '')
+                $('#Detalhes').parent().removeClass('is-upgraded is-dirty');
+        });
+
+        $("#Revisor").autocomplete({
+            source: function (request, response) {
+                $.ajax({
+                    url: '../../PesqGeral/Revisor',
+                    type: 'POST',
+                    dataType: 'json',
+                    data: { Prefix: request.term },
+                    success: function (data) {
+                        var obj = $.parseJSON(data);
+                        response($.map(obj, function (item) {
+                            return { label: item.Nome, value: item.Nome, id: item.id };
+                        }))
+                    }
+                })
+            },
+            select: function (event, ui) {
+                $("#cRevisor").val(ui.item.id);
+            },
+            minLength: 3
+        });
+
+        $("#Responsavel").autocomplete({
+            source: function (request, response) {
+                $.ajax({
+                    url: '../../PesqGeral/Responsavel',
+                    type: 'POST',
+                    dataType: 'json',
+                    data: { Prefix: request.term },
+                    success: function (data) {
+                        var obj = $.parseJSON(data);
+                        response($.map(obj, function (item) {
+                            return { label: item.Nome, value: item.Nome, id: item.id };
+                        }))
+                    }
+                })
+            },
+            select: function (event, ui) {
+                $("#cResponsavel").val(ui.item.id);
+            },
+            minLength: 3
+        });
+
+        $("#SubTipoAgenda").autocomplete({
+            source: function (request, response) {
+                $.ajax({
+                    url: '../../PesqGeral/SubTipoAgenda',
+                    type: 'POST',
+                    dataType: 'json',
+                    data: { cTipoAgenda: $("#cTipoAgenda").val(), Prefix: request.term },
+                    success: function (data) {
+                        var obj = $.parseJSON(data);
+                        response($.map(obj, function (item) {
+                            return { label: item.Nome, value: item.Nome, id: item.id };
+                        }))
+                    }
+                })
+            },
+            select: function (event, ui) {
+                $("#cSubTipoAgenda").val(ui.item.id);
+            },
+            minLength: 3
+        });
+
+        $("#TipoAgenda").autocomplete({
+            source: function (request, response) {
+                $.ajax({
+                    url: '../../PesqGeral/TipoAgenda',
+                    type: 'POST',
+                    dataType: 'json',
+                    data: { cArea: $('#cArea').val(), Prefix: request.term },
+                    success: function (data) {
+                        var obj = $.parseJSON(data);
+                        response($.map(obj, function (item) {
+                            return { label: item.Nome, value: item.Nome, id: item.id };
+                        }))
+                    }
+                })
+            },
+            select: function (event, ui) {
+                $("#cTipoAgenda").val(ui.item.id);
+                $("#cProcesso").val($("#Identificador").val());
+            },
+            minLength: 3
+        });
+    });
+
+    function PesqGeral(opcao, cArea, codigo, cliFat, termo) {
+        var title;
+        var param = $('#cArea').val() + "|" + $("#cTipoAgenda").val() + "|\t|" + termo;
+
+        if (opcao == "TipoAgenda")
+            title = "Tipo da Agenda";
+        else if (opcao == "SubTipoAgenda")
+            title = "Sub-Tipo da Agenda";
+        else if (opcao == "Responsavel")
+            title = "Responsável";
+        else if (opcao == "Revisor")
+            title = "Revisor";
+
+
+        $.ajax({
+            url: '../../PesqGeral/Index?opcao=' + opcao + '&param=' + param,
+            type: 'GET',
+            success: function (dados) {
+                $("#dialogPesqAgenda").css('width', '500');
+                $(".dialogPesq").html(dados);
+                $("#txtPesquisar").val(termo);
+                $('#title_dialogPesq').html(title);
+                modalP.showModal();
+            },
+            error: function (erro) {
+
+            }
+        });
+    }
+
+    function PesqSubTipo(tipoId, termo, inner) {
+        var title = "Sub-Tipo da Agenda";
+
+        $.ajax({
+            url: '../../PesqGeral/SubTipo?tipoId=' + tipoId + '&pesq=' + termo,
+            type: 'GET',
+            success: function (dados) {
+                $("#dialogPesqSubTipo").css('width', '500');
+                $(".dialogPesqSubTipo").html(dados);
+                $("#txtPesquisar").val(termo);
+                $('#title_dialogPesqSubTipo').html(title);
+                if (inner == false) {
+                    modalSubTipo.showModal();
+                }
+            },
+            error: function (erro) {
+
+            }
+        });
+    }
+
+    function UltimosAndamentos() {
+        $.ajax({
+            url: '../../Agenda/UltimosAnd?cProcesso=' + $("#Identificador").val(),
+            type: 'GET',
+            success: function (dados) {
+                if (dados != "") {
+                    $("#Detalhes").val(dados);
+                }
+            },
+            error: function (erro) {
+
+            }
+        });
+    }

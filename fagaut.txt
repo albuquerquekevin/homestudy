@@ -1,0 +1,88 @@
+FUNCAO 
+
+FUNCTION F_AGENDA_AUTOMATICA(
+    DAT_AGE IN DATE, 
+    IDE_SUB_TPO IN INT)
+  RETURN DATE IS 
+  VRETORNO DATE;
+  VCURSOR SYS_REFCURSOR;
+  VCURSOR_AUX SYS_REFCURSOR;
+  DAYWEEK INT;
+  VSTA_QTD_DIA INT;
+  VCOUNT INT;
+  N_ROW INT;
+  
+  BEGIN
+  
+    VRETORNO := DAT_AGE + 1;
+    VCOUNT := 0;
+    N_ROW := 0;
+    
+    OPEN VCURSOR FOR
+      SELECT STA_QTD_DIA FROM P_SUB_TP_AGENDAS WHERE STA_IDE = IDE_SUB_TPO;
+      
+      FETCH VCURSOR INTO VSTA_QTD_DIA;
+    LOOP
+      
+      EXIT WHEN VCOUNT >= VSTA_QTD_DIA - 1;
+      
+      OPEN VCURSOR_AUX FOR
+        SELECT TO_CHAR(VRETORNO,'d') FROM DUAL;
+        /*1-'Domingo'
+        2-'Segunda-Feira'
+        3-'Terça-Feira'
+        4-'Quarta-Feira'
+        5-'Quinta-Feira'
+        6-'Sexta-Feira'
+        7-'Sábado'*/
+    
+      FETCH VCURSOR_AUX INTO DAYWEEK;
+      
+      CLOSE VCURSOR_AUX;
+      
+      SELECT COUNT(1) 
+      INTO  N_ROW
+      FROM  P_FERIADOS_ACP
+      WHERE FEA_FLG_ATV = 1
+      AND   LTRIM(RTRIM(FEA_TPO)) = 'FIXO'
+      AND   TO_CHAR(FEA_DTA, 'MMDD') = TO_CHAR(VRETORNO, 'MMDD')
+      AND   ROWNUM = 1;
+      
+      IF N_ROW = 0 THEN
+      
+        SELECT COUNT(1) 
+        INTO   N_ROW  
+        FROM   P_FERIADOS_ACP
+        WHERE  FEA_FLG_ATV = 1
+        AND    TO_CHAR(FEA_DTA, 'DDMMYYYY') = TO_CHAR(VRETORNO, 'DDMMYYYY')
+        AND    ROWNUM = 1;
+        
+      END IF;
+      IF N_ROW = 1 THEN
+        VRETORNO := VRETORNO + 1;
+        IF DAYWEEK <> 2 THEN
+          VSTA_QTD_DIA := VSTA_QTD_DIA + 1;
+        END IF;
+      END IF;
+      
+      IF DAYWEEK = 1 THEN
+        VRETORNO := VRETORNO + 1;
+      ELSIF DAYWEEK = 7 THEN
+          VRETORNO := VRETORNO + 2;
+      ELSE
+        VRETORNO := VRETORNO + 1;
+        VCOUNT := VCOUNT + 1;
+      END IF;
+      
+    END LOOP;
+    
+    CLOSE VCURSOR;
+  
+  RETURN VRETORNO;
+  
+  EXCEPTION
+    WHEN OTHERS THEN
+      DBMS_OUTPUT.PUT_LINE(SQLERRM);
+      RAISE_APPLICATION_ERROR(-20001, 'Erro: ' || SQLERRM);
+      
+  END F_AGENDA_AUTOMATICA;

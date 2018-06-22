@@ -1,0 +1,45 @@
+TABELA CONTATO
+
+CON_IDE	NUMBER(8,0)	No		1	Identificador do Contato
+CON_SEQ_IDE	NUMBER(8,0)	No		2	Sequence de CONTATOS
+CON_APE	VARCHAR2(20 BYTE)	Yes		3	Sigla do Contato
+CON_NOM_COM	VARCHAR2(70 BYTE)	No		4	Nome completo do Contato
+CON_FLG_ATV	NUMBER(1,0)	No		5	"Flag de Contato ativo/inativo    0 - >    1 - >    3 - >"
+CON_QEM	VARCHAR2(60 BYTE)	No		6	Sigla de quem cadastrou o contato
+CON_QDO	DATE	No		7	Data em que foi cadastrado o contato
+CON_EMP_IDE	NUMBER(8,0)	Yes		8	FK - EMPRESAS
+CON_FPF_IDE	NUMBER(5,0)	Yes		9	FK - FUNCAO_PROFISSIONALS
+CON_CPR_IDE	NUMBER(5,0)	Yes		10	FK -  CATEGORIA_PROFISSIONALS
+CON_CPR_DTA	DATE	Yes		11	
+CON_ADP_IDE	NUMBER(5,0)	Yes		12	"FK - AREA_ADPTOS (departamento ao qual pertence o profissional)   
+ESTE CAMPO ESTA DESATUALIZADO, N?O UTILIZAR"
+CON_TRT_IDE	NUMBER(5,0)	Yes		13	FK - TP_TRATAMENTOS
+CON_TRT_SGL	VARCHAR2(8 BYTE)	Yes		14	Sigla de tratamento para com o contato
+CON_DTA_NAS	DATE	Yes		15	Data de nascimento
+CON_DTA_FAL	DATE	Yes		16	Data de falecimento
+CON_FER_INI	DATE	Yes		17	Inicio do periodo de ferias
+CON_FER_FIN	DATE	Yes		18	Fim do periodo de ferias
+CON_FLG_MAL	NUMBER(1,0)	Yes		19	Flag de recebimento de mala direta|  1-Não Participa/ 0 - Participa
+CON_SEN	VARCHAR2(255 BYTE)	Yes		20	Senha de acesso ao System
+CON_FLG_COM	NUMBER(1,0)	Yes		21	Flag de contato comercial
+CON_FLG_NCO	NUMBER(1,0)	Yes		22	Contato financeiro
+CON_NRO_MAT	VARCHAR2(15 BYTE)	Yes		23	Matricula do contato
+CON_EQP_IDE	NUMBER(8,0)	Yes		24	FK - EQUIPES
+CON_TPO	VARCHAR2(1 BYTE)	Yes		25	"P - Produtivo   
+N - n?o produtivo"
+CON_SAL	NUMBER(15,2)	Yes		26	Saldo de Despesas do Contato
+CON_FLG_DEM	NUMBER(1,0)	Yes		27	Flag de demiss?o ativo/inativo
+CON_DTA_DEM	DATE	Yes		28	Data de demiss?o
+CON_DTA_PRO	DATE	Yes		29	Data de promoc?o
+CON_FLG_MPE	NUMBER(1,0)	Yes		30	Flag de meio periodo ativo/inativo
+CON_DTA_MPE	DATE	Yes		31	Data de inicio de meio periodo
+CON_DTA_ADM	DATE	Yes		32	Data de admiss?o
+CON_PES_IDE	NUMBER(8,0)	Yes		33	FK - Pessoas
+CON_TIT	VARCHAR2(60 BYTE)	Yes		34	Titulo do contato
+CON_FLG_NTS	NUMBER(1,0)	Yes		35	
+CON_FLG_ALN	NUMBER(1,0)	Yes		36	
+CON_OUT_FOR_CON	VARCHAR2(2000 BYTE)	Yes		37	
+CON_FLG_EST	CHAR(1 BYTE)	Yes		38	Flag de contato estratégico
+CON_FLG_DEC	CHAR(1 BYTE)	Yes		39	Flag de contato decisor
+CON_FLG_INF	CHAR(1 BYTE)	Yes		40	Flag de contato influenciador: A-Alto, M-Médio e B-Baixo
+CON_WEB_BLQ	NUMBER(1,0)	Yes		41	

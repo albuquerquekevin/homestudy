@@ -1,0 +1,71 @@
+TABELA P_PROCESSOS
+
+PRO_IDE	NUMBER(8,0)	No		1	Identificador - PK
+PRO_ARE_IDE	NUMBER(5,0)	No		2	Area a qual pertence o Processo
+PRO_CAS_IDE	NUMBER(8,0)	No		3	Caso a qual Pertence o Processo
+PRO_STA	CHAR(1 BYTE)	No		4	Status do Processo (A = Andamento; E=Encerrado)
+PRO_NRO	VARCHAR2(60 BYTE)	Yes		5	Numero do Processo
+PRO_DTA_DIS	DATE	Yes		6	Data de Distribuic?o
+PRO_DTA_ENT	DATE	Yes		7	Data de Entrada
+PRO_PAS_TPO	NUMBER(1,0)	Yes		8	Tipo de Pasta
+PRO_PAS_NRO	VARCHAR2(20 BYTE)	Yes		9	Numero da Pasta
+PRO_ACA_IDE	NUMBER(5,0)	Yes		10	Identificac?o da Ac?o
+PRO_VLR_DIS	NUMBER(15,2)	Yes		11	Valor de Distribuic?o
+PRO_MOE_SGL	VARCHAR2(5 BYTE)	Yes		12	Moeda
+PRO_DTA_APU	DATE	Yes		13	Data de Apurac?o do Valor de Distribuic?o
+PRO_FOR_IDE	NUMBER(5,0)	Yes		14	Identificado do Forum
+PRO_COM_IDE	NUMBER(5,0)	Yes		15	FK - P_COMARCAS
+PRO_VAR_IDE	NUMBER(5,0)	Yes		16	Identificador de Vara
+PRO_LOC	VARCHAR2(100 BYTE)	Yes		17	Complemento de Localizac?o
+PRO_EXI	CHAR(1 BYTE)	Yes		18	Probabilidade de Exito
+PRO_EXI_CPL	VARCHAR2(2000 BYTE)	Yes		19	Probabilidade de Exito - Complemento
+PRO_PRO_IDE	NUMBER(8,0)	Yes		20	Auto Relacinamento para Desdobramentos
+PRO_NOM	VARCHAR2(255 BYTE)	Yes		21	Nome do Processo
+PRO_CLI_NOM	VARCHAR2(100 BYTE)	Yes		22	No do Cliente
+PRO_TPR_CLI	NUMBER(5,0)	Yes		23	Papel do Cliente
+PRO_PAR_CNT	VARCHAR2(200 BYTE)	Yes		24	Parte Contraria
+PRO_TPR_CNT	NUMBER(5,0)	Yes		25	FK - P_TP_PAPEL_PARTES Papel Parte Contraria -
+PRO_OBJ_RES	VARCHAR2(255 BYTE)	Yes		26	Objeto do Processo - Resumo
+PRO_ORI_TPO	CHAR(1 BYTE)	Yes		27	Origem do Processo (I = Interior; C = Capital)
+PRO_FLG_ATV	NUMBER(1,0)	No		28	"1 - Ativo 
+0 - Excluído (não aparecerá em nenhuma tela do sistema) 
+9 - Exclusivo para os "Processos Trabalhistas""
+PRO_QEM	VARCHAR2(15 BYTE)	Yes		29	Usuario que realizou Cadastro/Ultima Alterac?o
+PRO_QDO	DATE	Yes		30	Data Cadastro/Ultima Alteracao
+PRO_DTA_TER	DATE	Yes		31	Data Termino Processo
+PRO_CRE_IDE	NUMBER(8,0)	Yes		32	FK - P_CREDENCIADOS
+PRO_PST_IDE	NUMBER(5,0)	Yes		33	FK - P_STATUS (Motivo de Encerramento)
+PRO_NRO_CLI	VARCHAR2(30 BYTE)	Yes		34	"Numero Cliente          
+Para o Cliente Banespa e o DOSSIE"
+PRO_FLG_REV	NUMBER(1,0)	Yes	1	35	Flag de revisao.
+PRO_QEM_REV	VARCHAR2(15 BYTE)	Yes		36	Quem Resivou
+PRO_QDO_REV	DATE	Yes		37	
+PRO_FIL_IDE	NUMBER(8,0)	Yes		38	FK - P_FILIAIS
+PRO_PAR_DOC	VARCHAR2(20 BYTE)	Yes		39	Documento da Parte Contraria
+PRO_EMP_IDE	NUMBER(8,0)	Yes		40	FK - EMPRESAS
+PRO_INS_IDE	NUMBER(3,0)	Yes		41	Instancia
+PRO_RIT_IDE	NUMBER(8,0)	Yes		42	FK - P_RITO
+PRO_TIP_PAR	NUMBER(1,0)	Yes		43	0,Pessoa Fisica,1, Pessoa Juridica
+PRO_TDO_IDE	NUMBER	Yes		44	Tipo do Documento da Parte Contraria
+PRO_UF	CHAR(2 BYTE)	Yes		45	"PARA UF UTILIZAR COM_EST_IDE EM P_COMARCAS         
+CAMPO DESATUALIZADO N?O UTILIZAR."
+PRO_PAR_CNT_UP	VARCHAR2(200 BYTE)	Yes		46	Parte contraria Maiusculo
+PRO_TCA_IDE	NUMBER(8,0)	Yes		47	FK TABELA TIPO DE ACAO (P_TIPO_ACAOS)
+PRO_AND_DTA	DATE	Yes		48	Data do ultimo andamentos realizado
+PRO_AND_IDE	NUMBER(8,0)	Yes		49	"FK - PRO_AND_IDE          
+Ultimo andamento do processo"
+PRO_AND_QTD	NUMBER(8,0)	Yes		50	
+PRO_FLG_AUX	NUMBER(1,0)	Yes		51	
+PRO_INI_FAT	DATE	Yes		52	
+PRO_FIM_FAT	DATE	Yes		53	
+PRO_QEM_INC	VARCHAR2(15 BYTE)	Yes	USER	54	SE VAZIO DATA CAD. < 24-03-2008
+PRO_QDO_INC	DATE	Yes	SYSDATE	55	SE VAZIO DATA CAD. < 24-03-2008
+PRO_FLG_COR	NUMBER(1,0)	Yes		56	Indica se o processo é (1) ou não (0) acompanhado por correspondente (PROCESSO_CORRESPONDENTE)
+PRO_CTR_IDE	NUMBER(8,0)	Yes		57	FK - CONTRATOS - ID DO CONTRATO DO CREDENCIADO SELECIONADO P/ CORRESP
+PRO_FFU_IDE	NUMBER(8,0)	Yes		58	FK - FILIALS - ID da filial indicada como unidade correspondente
+PRO_FFU_ARE	NUMBER(8,0)	Yes		59	FK - P_AREAS - ID da equipe ligada a unidade correspondente
+PRO_PPE_IDE	NUMBER(8,0)	Yes		60	Indica se o processo é ELETRÔNICO pelo IDE da tabela P_PROCESSOS_ELETRONICOS
+PRO_IDV_IDE	NUMBER	Yes		61	Relacionado com a tabela p_indice_valores, será utilizado para identificar qual indice de reajustes para valores em processos a empresa utiliza por padrão, caso não informado será pesquisado na tabela p_areas e caso não informado na tabela p_areas será utilizado 0,5% como padrão
+PRO_CNJ	VARCHAR2(31 BYTE)	Yes		62	
+PRO_NRO_AUX	VARCHAR2(26 BYTE)	Yes		63	
+PRO_NRO_BKP	VARCHAR2(60 BYTE)	Yes		64	
