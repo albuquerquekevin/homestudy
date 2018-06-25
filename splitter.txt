@@ -1,0 +1,25 @@
+create or replace FUNCTION F_SPLIT_UPPER
+(
+    P_LIST	VARCHAR2,
+    P_DEL	VARCHAR2 := ','
+) RETURN SPLIT_TBL PIPELINED
+IS
+    L_IDX	PLS_INTEGER;
+    L_LIST	VARCHAR2(32767) := P_LIST;
+    L_VALUE	VARCHAR2(32767);
+BEGIN
+    LOOP
+        L_IDX := INSTR(L_LIST,P_DEL);
+        IF L_IDX > 0 THEN
+            PIPE ROW(F_UPPER(RTRIM(LTRIM(SUBSTR(L_LIST,1,L_IDX-1)))));
+            L_LIST := SUBSTR(L_LIST,L_IDX+LENGTH(P_DEL));
+        ELSE
+            PIPE ROW(F_UPPER(RTRIM(LTRIM(L_LIST))));
+            EXIT;
+        END IF;
+    END LOOP;
+    RETURN;
+END F_SPLIT_UPPER;
+
+ 
+ 
