@@ -1,0 +1,630 @@
+SELECT REGEXP_SUBSTR('1,23,3,36','[^,]+', 1, LEVEL) IDE_SUBTIPO FROM DUAL
+                CONNECT BY REGEXP_SUBSTR('1,23,3,36', '[^,]+', 1, LEVEL) IS NOT NULL;
+--funcao split
+
+DECLARE
+
+CURSOR sub_tipos_cursor IS 
+SELECT REGEXP_SUBSTR('5,8,9,55,66','[^,]+', 1, LEVEL) IDE_SUBTIPO FROM DUAL
+                CONNECT BY REGEXP_SUBSTR('5,8,9,55,66', '[^,]+', 1, LEVEL) IS NOT NULL;
+       sub_tipo sub_tipos_cursor%ROWTYPE;
+BEGIN
+    
+  OPEN sub_tipos_cursor;
+  LOOP
+    FETCH sub_tipos_cursor
+    INTO sub_tipo;
+    dbms_output.put_line('O sub tipo é ' || sub_tipo);
+    EXIT WHEN sub_tipos_cursor%NOTFOUND;
+  END LOOP;
+  IF sub_tipos_cursor%ISOPEN THEN
+    CLOSE sub_tipos_cursor;
+  END IF;
+END;
+--teste com cursor
+
+
+
+create or replace PROCEDURE                                                        Preajuste(nProIde IN NUMBER)
+IS
+nAUX            NUMBER(30,6);
+cDataAux        CHAR(7);
+cDataAtual      CHAR(7);
+nDataAtualSELIC NUMBER(8);
+cDataIGPM       CHAR(7);
+cDataSELIC      NUMBER(8);
+cDataSoma       NUMBER(8);
+nDataEmi        NUMBER(8);
+nValor          NUMBER(30,6);
+nValorAux       NUMBER(30,6);
+nValorHoje      NUMBER(30,6);
+nValorIGPM      NUMBER(30,6);
+nValorSELIC     NUMBER(30,10);
+nSaldo          NUMBER(30,6);
+nJuros          NUMBER(30,6);
+nJurosA2003     NUMBER(30,6);
+nJurosD2003     NUMBER(30,6);
+cData           CHAR(7);
+nArea           NUMBER(5);
+nIde            NUMBER(8);
+nIdvIde         NUMBER(1);
+nok             NUMBER(1);
+i               NUMBER(5);
+cDataMax        CHAR(7);
+nValorCorr      NUMBER(30,6);
+nValorJur       NUMBER(30,6);
+nTotSelic       NUMBER(30,6);
+nQtdAntes2003   NUMBER(8); --criado para calcular juros de 0,5% antes de 2003
+nQtdDepois2003  NUMBER(8); --criado para calcular juros de 1% antes de 2003
+nDataEmiAux     NUMBER(8);
+ddataEmi        DATE;
+DDATAEMIMAIS1   DATE;
+NTVLIDE         NUMBER(5);
+nProIdeAux      NUMBER(8);
+
+TYPE T_CUR_PROCESSOS IS RECORD
+(
+     VALORES   NUMBER(30,6),
+     DATA      CHAR(7),
+     AREA      NUMBER(1),
+     IDE       NUMBER(8),
+     IDV_IDE   NUMBER(1),
+     DATA_EMI  NUMBER(8),
+     DATA_EMI2 DATE,
+     TVL_IDE   NUMBER(5),
+     pro_ide   NUMBER(8)
+);
+
+TYPE TYPE_C_CUR_PROCESSOS IS REF CURSOR RETURN T_CUR_PROCESSOS;
+
+CUR_PROCESSOS TYPE_C_CUR_PROCESSOS;
+
+CURSOR CUR_VALOR(clData CHAR)
+IS
+SELECT REA_VAL
+FROM   P_REAJUSTES
+WHERE  REA_DTA = clData
+AND    REA_IND_IDE = 1;
+
+CURSOR CUR_VALOR_HOJE(clData CHAR)
+IS
+SELECT REA_VAL
+FROM   P_REAJUSTES
+WHERE  REA_DTA = TO_CHAR(SYSDATE,'MM/YYYY')
+AND    REA_IND_IDE = 1;
+
+CURSOR CUR_VALOR_ANT(clData CHAR)
+IS
+SELECT REA_VAL
+FROM   P_REAJUSTES
+WHERE  REA_DTA = clData
+AND    REA_IND_IDE = 1;
+
+CURSOR CUR_VALOR_IGPM(clDataIGPM CHAR)
+IS
+SELECT REA_VAL
+FROM   P_REAJUSTES
+WHERE  REA_DTA = clDataIGPM
+AND    REA_IND_IDE = 61;
+
+CURSOR CUR_VALOR_SELIC(clDataSELIC CHAR)
+IS
+SELECT RDI_VAL
+FROM   P_REAJUSTES_DIARIO
+WHERE  TO_CHAR(RDI_DTA,'YYYYMMDD') = clDataSELIC
+AND    RDI_IND_IDE = 64;
+
+CURSOR CUR_SOMA_DATA(clDataSoma CHAR)
+IS
+SELECT TO_DATE(clDataSoma) + 1
+FROM   DUAL;
+
+
+BEGIN
+
+  -- ÚLTIMAS ALTERAÇÕES NA PROCEDURE POR: Karla (29/07/2013).
+  -- Criação de mais 2 tipos de reajustes para Civel
+  -- Quando o PRO_IDV_IDE = 1 (utilizar indice da civel e juros de 0,5% ao mes)
+  -- Quando o PRO_IDV_IDE = 2 (utilizar indice da civel e juros de 1% ao mes).
+  -- Quando o PRO_IDV_IDE = 3 Índice SELIC (utilizar indice IGPM e juros de 1% ao mes).
+  -- Quando o PRO_IDV_IDE = 4 Selic TRIB(utilizar indice IPCA e juros de 1% ao mes).
+
+  --BEGIN DBMS_SESSION.SET_NLS('NLS_DATE_FORMAT','''DD/MM/YYYY''');END;
+
+  SELECT TO_CHAR(SYSDATE,'YYYYMM') INTO cDataAtual
+  FROM   DUAL;
+  SELECT TO_CHAR(SYSDATE,'YYYYMMDD') INTO nDataAtualSELIC
+  FROM   DUAL;
+  i := 1;
+  nQtdAntes2003:=0;
+  nQtdDepois2003:=0;
+
+  IF nProIde = 0 THEN
+
+   -- Atualiza valores para 0 (zero) quando não tem data de emissão.
+	-- ÚLTIMAS ALTERAÇÕES POR: ROBERTO (18/08/2006).
+
+      UPDATE P_PROCESSOS_VALORES A SET
+		     PVL_VLR_REA = 0, PVL_DTA_REA = NULL
+      WHERE  PVL_IDE IN (
+		         SELECT PVL_IDE
+       		   FROM   P_PROCESSOS_VALORES, P_PROCESSOS
+					   ,      P_AREAS, P_TP_AREAS
+      		   WHERE  PVL_DTA_EMI IS NULL
+					   AND    PVL_IND_IDE IS NULL
+					   AND    PVL_FLG_ATV = 1
+					   AND    PVL_PRO_IDE = PRO_IDE
+					   AND    PRO_FLG_ATV = 1
+					   AND    PRO_ARE_IDE = ARE_IDE
+					   AND    ARE_FLG_ATV = 1
+					   AND    ARE_TPO = TAR_IDE
+					   AND    TAR_PGA_IDE = 2
+					   AND    TAR_FLG_VLR_REA = 1
+					  )
+        AND    PVL_FLG_ATV = 1;
+
+    -- ÚLTIMAS ALTERAÇÕES POR: ROBERTO (18/08/2006).
+    OPEN CUR_PROCESSOS FOR
+         SELECT PVL_VLR, TO_CHAR(PVL_DTA_EMI,'MM/YYYY')
+		 ,      ARE_TPO, PVL_IDE, PRO_IDV_IDE, TO_CHAR(PVL_DTA_EMI,'YYYYMMDD'), PVL_DTA_EMI, PVL_TVL_IDE, PRO_IDE
+         FROM   P_PROCESSOS_VALORES, P_PROCESSOS
+		 ,      P_AREAS, P_TP_AREAS
+         WHERE  PVL_DTA_EMI IS NOT NULL
+		 AND    PVL_IND_IDE IS NULL
+		 AND    PVL_FLG_ATV = 1
+		 AND    PVL_PRO_IDE = PRO_IDE
+		 AND    PRO_FLG_ATV = 1
+     AND    PRO_ARE_IDE = ARE_IDE
+		 AND    ARE_FLG_ATV = 1
+		 AND    ARE_TPO = TAR_IDE
+		 AND    TAR_PGA_IDE = 2
+		 AND    TAR_FLG_VLR_REA = 1
+	   ORDER  BY PVL_IDE;
+	ELSE
+	-- Atualiza valores para 0 (zero) quando não tem data de emissão.
+	-- ÚLTIMAS ALTERAÇÕES POR: ROBERTO (18/08/2006).
+    UPDATE P_PROCESSOS_VALORES A SET
+		   PVL_VLR_REA = 0, PVL_DTA_REA = NULL
+    WHERE  PVL_IDE IN (
+		        SELECT PVL_IDE
+      		   FROM   P_PROCESSOS, P_PROCESSOS_VALORES
+					   ,      P_AREAS, P_TP_AREAS
+      		   WHERE  PRO_IDE = nProIde
+					   AND    PRO_FLG_ATV = 1
+					   AND    PRO_IDE = PVL_PRO_IDE
+					   AND    PVL_DTA_EMI IS NULL
+					   AND    PVL_IND_IDE IS NULL
+					   AND    PVL_FLG_ATV = 1
+					   AND    PRO_ARE_IDE = ARE_IDE
+					   AND    ARE_FLG_ATV = 1
+					   AND    ARE_TPO = TAR_IDE
+					   AND    TAR_PGA_IDE = 2
+					   AND    TAR_FLG_VLR_REA = 1
+					  )
+    AND    PVL_FLG_ATV = 1;
+    -- ÚLTIMAS ALTERAÇÕES POR: ROBERTO (18/08/2006).
+    OPEN CUR_PROCESSOS FOR
+         SELECT PVL_VLR, TO_CHAR(PVL_DTA_EMI,'MM/YYYY')
+		 ,      ARE_TPO, PVL_IDE, PRO_IDV_IDE, TO_CHAR(PVL_DTA_EMI,'YYYYMMDD'), PVL_DTA_EMI, PVL_TVL_IDE, PRO_IDE
+         FROM   P_PROCESSOS, P_PROCESSOS_VALORES
+		 ,      P_AREAS, P_TP_AREAS
+         WHERE  PRO_IDE = nProIde
+		 AND    PRO_FLG_ATV = 1
+		 AND    PRO_IDE = PVL_PRO_IDE
+		 AND    PVL_DTA_EMI IS NOT NULL
+		 AND    PVL_IND_IDE IS NULL
+		 AND    PVL_FLG_ATV = 1
+     AND    PRO_ARE_IDE = ARE_IDE
+		 AND    ARE_FLG_ATV = 1
+		 AND    ARE_TPO = TAR_IDE
+		 AND    TAR_PGA_IDE = 2
+		 AND    TAR_FLG_VLR_REA = 1
+	   ORDER  BY PVL_IDE;
+	END IF;
+
+  LOOP
+
+    FETCH CUR_PROCESSOS INTO nValor, cData, nArea, nIde, nIdvIde, nDataEmi, dDataEmi, nTvlIde, nProIdeAux;
+	  EXIT WHEN CUR_PROCESSOS%NOTFOUND;
+    IF (NTVLIDE = 3 AND (NIDVIDE = 5 OR NIDVIDE = 6)) THEN --3-CONTINGENCIA
+      if NIDVIDE = 5 then
+          --5	TJSP juros 1% - Para Contingência SELIC acumul.
+          PREAJUSTE_TRIBUTARIO(nProIdeAux);
+      ELSE
+          --6	TJSP JUROS 1% - NÃO ATUALIZA CONTINGÊNCIA
+          UPDATE P_PROCESSOS_VALORES SET
+             PVL_VLR_REA = 0
+          ,      PVL_VLR_EXI_REA = 0
+          ,      PVL_DTA_REA = SYSDATE
+          ,      PVL_VLR_COR = 0, PVL_VLR_JUR = 0
+             WHERE  PVL_IDE = NIDE AND    PVL_FLG_ATV = 1;      
+      end if;
+    else  
+        cDataAux := SUBSTR(cData,4,4)||SUBSTR(cData,1,2);
+        nDataEmiAux := nDataEmi;
+        OPEN CUR_VALOR(cData);
+        FETCH CUR_VALOR INTO nValorAux;
+          OPEN CUR_VALOR_HOJE(cData);
+          FETCH CUR_VALOR_HOJE INTO nValorHoje;
+            IF CUR_VALOR_HOJE%NOTFOUND THEN
+              SELECT TO_CHAR(MAX(TO_DATE('01/'||REA_DTA)),'MM/YYYY')
+              INTO   cDataMax
+              FROM   P_REAJUSTES
+              WHERE  REA_IND_IDE = 1;
+              OPEN CUR_VALOR_ANT(cDataMax);
+              FETCH CUR_VALOR_ANT INTO nValorHoje;
+            END IF;
+        
+            IF CUR_VALOR%FOUND AND (CUR_VALOR_HOJE%FOUND OR CUR_VALOR_ANT%FOUND)
+            AND  (nIdvIde = 2 OR nIdvIde = 5 OR nIdvIde = 6)  THEN
+             LOOP
+        
+              IF cDataAux > cDataAtual THEN
+                UPDATE P_PROCESSOS_VALORES SET
+                   PVL_VLR_REA = nSaldo
+                ,      PVL_VLR_EXI_REA = (nSaldo * NVL(PVL_PER_EXI,0))/100
+                ,      PVL_DTA_REA = SYSDATE
+                ,      PVL_VLR_COR = nValorCorr, PVL_VLR_JUR = nValorJur
+                   WHERE  PVL_IDE = nIde
+                AND    PVL_FLG_ATV = 1;
+                COMMIT;
+                nSaldo := 0;
+                nJuros := 0;
+                nValorCorr := 0;
+                nValorJur := 0;
+                i := 1;
+                nJurosD2003:= 0;
+                nJurosA2003:= 0;
+                nQtdAntes2003:= 0;
+                nQtdDepois2003:= 0;
+               EXIT;
+             ELSE
+        
+                IF I = 1 THEN
+                  nValorCorr := (nValor / nValorAux) * nValorHoje;
+                  --VBOMURA - 28/05/2013
+                  --nJuros := (nValorCorr * 0.5) / 100;
+                  IF cDataAux <= '200301' THEN
+                     nJuros := (nValorCorr * 0.5) / 100;
+                  ELSE
+                     nJuros := (nValorCorr * 1) / 100;
+                  END IF;
+                  --VBOMURA - 28/05/2013
+                  nSaldo := nValorCorr;
+                ELSE
+                  --VBOMURA - 28/05/2013
+                  IF cDataAux <= '200301' THEN
+                      nJuros := (nValorCorr * 0.5) / 100;
+                  ELSE
+                      nJuros := (nValorCorr * 1) / 100;
+                  END IF;
+                  --VBOMURA - 28/05/2013
+                  nSaldo := nSaldo + nJuros;
+                  nValorJur := NVL(nValorJur,0) + nJuros;
+                END IF;
+        
+                cDataAux := TO_CHAR(ADD_MONTHS(TO_DATE('01'||'/'||SUBSTR(cDataAux,5,2)||'/'||SUBSTR(cDataAux,1,4),'DD/MM/YYYY'),1),'YYYYMM');
+                i := i + 1;
+        
+              END IF;
+        
+             END LOOP;
+          ELSE
+            -- reajuste pela SELIC
+            IF CUR_VALOR%FOUND AND (CUR_VALOR_HOJE%FOUND OR CUR_VALOR_ANT%FOUND)
+             AND  nIdvIde = 3 THEN
+             nok:= 3;
+              nValorCorr:= nValor;
+             LOOP
+                IF nDataEmiAux >= nDataAtualSELIC THEN
+               --   nSaldo      := nValorCorr + nJuros;
+               --   nValorJur   := nJuros;
+                --  nTotSelic   := nTotSelic + 1;
+                --  nValorCorr  := (nValor * nTotSelic /100) + nValor;
+                  nSaldo      :=  nValorCorr;
+                  nJuros      := 0;
+                  nValorJur   := nJuros;
+                  UPDATE P_PROCESSOS_VALORES SET
+                    PVL_VLR_REA = nSaldo
+                  ,      PVL_VLR_EXI_REA = (nSaldo * NVL(PVL_PER_EXI,0))/100
+                  ,      PVL_DTA_REA = SYSDATE
+                  ,      PVL_VLR_COR = nValorCorr
+                  ,      PVL_VLR_JUR = nJuros
+                  WHERE  PVL_IDE = nIde
+                  AND    PVL_FLG_ATV = 1;
+                  COMMIT;
+                  nSaldo := 0;
+                  nJuros := 0;
+                  nValorCorr := 0;
+                  nValorJur := 0;
+                  i := 1;
+                  nJurosD2003:= 0;
+                  nJurosA2003:= 0;
+                  nQtdAntes2003:= 0;
+                  nQtdDepois2003:= 0;
+                  nTotSelic:= 0;
+                  EXIT;
+                ELSE
+                  IF I = 1 THEN
+                      --obter juros selic diaria
+                     -- OPEN  CUR_SOMA_DATA(dDataEmi);
+                     -- FETCH CUR_SOMA_DATA INTO dDataEmiMais1;
+                     -- dDataEmi:= dDataEmiMais1;
+                      dDataEmiMais1:= dDataEmi;
+                      cDataSelic := TO_CHAR(dDataEmiMais1,'YYYYMMDD');
+                      nDataEmiAux := TO_CHAR(dDataEmiMais1,'YYYYMMDD');
+                      OPEN  CUR_VALOR_SELIC(cDataSELIC);
+                      FETCH CUR_VALOR_SELIC INTO nValorSELIC;
+                      IF CUR_VALOR_SELIC%NOTFOUND THEN
+                         nValorCorr := nValorCorr;  --NÃO FAZ NADA (SENAO ACHA O INDICE É PORQUE NÃO É DIA UTIL)
+                      ELSE
+                         nValorCorr := (nValorCorr * nValorSELIC);
+                      END IF;
+                      nTotSelic := 0; --rever
+                   ELSE
+                      OPEN  CUR_SOMA_DATA(dDataEmi);
+                      FETCH CUR_SOMA_DATA INTO dDataEmiMais1;
+                      dDataEmi:= dDataEmiMais1;
+                      cDataSelic := TO_CHAR(dDataEmiMais1,'YYYYMMDD');
+                      nDataEmiAux := TO_CHAR(dDataEmiMais1,'YYYYMMDD');
+                      OPEN  CUR_VALOR_SELIC(cDataSELIC);
+                      FETCH CUR_VALOR_SELIC INTO nValorSELIC;
+                      IF CUR_VALOR_SELIC%NOTFOUND THEN
+                         nValorCorr := nValorCorr;  --NÃO FAZ NADA (SENAO ACHA O INDICE É PORQUE NÃO É DIA UTIL)
+                      ELSE
+                         nValorCorr := (nValorCorr * nValorSELIC);
+                      END IF;
+                      CLOSE CUR_SOMA_DATA;
+                   END IF;
+                   cDataAux := TO_CHAR(ADD_MONTHS(TO_DATE('01'||'/'||SUBSTR(cDataAux,5,2)||'/'||SUBSTR(cDataAux,1,4),'DD/MM/YYYY'),1),'YYYYMM');
+                   i := i + 1;
+                   CLOSE CUR_VALOR_SELIC;
+                  -- CLOSE CUR_SOMA_DATA;
+                END IF;
+                END LOOP;
+        
+        
+          -- CALCULO DO REAJUSTE PELO INDICE IGPM
+          -- JUROS DE 0,5% ATÉ 01/2003 E 1% A PARTIR DE 01/2003
+          --   LOOP
+        
+           --   IF cDataAux >= cDataAtual THEN
+        
+           --   nJurosA2003 := (nValorCorr * 0.5 / 100 * nQtdAntes2003);
+           --     nJurosD2003 := (nValorCorr * 1  / 100 * nQtdDepois2003);
+           --     nJuros      := nJurosD2003 + nJurosA2003;
+           --     nSaldo      := nValorCorr + nJuros;
+           --     nValorJur   := nJuros;
+        
+           --     UPDATE P_PROCESSOS_VALORES SET
+           --        PVL_VLR_REA = nSaldo
+           --     ,      PVL_VLR_EXI_REA = (nSaldo * NVL(PVL_PER_EXI,0))/100
+           --     ,      PVL_DTA_REA = SYSDATE
+           --     ,      PVL_VLR_COR = nValorCorr
+           --     ,      PVL_VLR_JUR = nJuros
+           --     WHERE  PVL_IDE = nIde
+           --     AND    PVL_FLG_ATV = 1;
+        
+           --     COMMIT;
+        
+           --     nSaldo := 0;
+           --     nJuros := 0;
+           --     nValorCorr := 0;
+           --     nValorJur := 0;
+           --     i := 1;
+           --     nJurosD2003:= 0;
+           --     nJurosA2003:= 0;
+           --     nQtdAntes2003:= 0;
+           --     nQtdDepois2003:= 0;
+        
+           --     EXIT;
+        
+           --   ELSE
+        
+           --     cDataIGPM := SUBSTR(cDataAux,5,2)||'/'||SUBSTR(cDataAux,1,4);
+        
+           --     OPEN  CUR_VALOR_IGPM(cDataIGPM);
+           --     FETCH CUR_VALOR_IGPM INTO nValorIGPM;
+        
+           --     IF CUR_VALOR_IGPM%NOTFOUND THEN
+           --        SELECT TO_CHAR(MAX(TO_DATE('01/'||REA_DTA)),'MM/YYYY')
+           --        INTO   cDataMax
+           --        FROM   P_REAJUSTES
+           --        WHERE  REA_IND_IDE = 61;
+           --     END IF;
+        
+           --     nValorCorr := nValorCorr + (nValorCorr * nValorIGPM /100);
+           --     IF cDataAux < '200301' THEN
+           --        nQtdAntes2003:= nQtdAntes2003 + 1;
+           --     ELSE
+           --        nQtdDepois2003:= nQtdDepois2003 + 1;
+           --     END IF;
+        
+           --     cDataAux := TO_CHAR(ADD_MONTHS(TO_DATE('01'||'/'||SUBSTR(cDataAux,5,2)||'/'||SUBSTR(cDataAux,1,4),'DD/MM/YYYY'),1),'YYYYMM');
+        
+           --     i := i + 1;
+        
+           --     CLOSE CUR_VALOR_IGPM;
+           --   END IF;
+        
+           --   END LOOP;
+           -- ELSE
+             -- reajuste pelo índice Cível com juros SELIC
+             --IF CUR_VALOR%FOUND AND (CUR_VALOR_HOJE%FOUND OR CUR_VALOR_ANT%FOUND)
+             --AND  nIdvIde = 4 THEN
+             --nok:= 4;
+             --     nValorCorr:= nValor;
+             --LOOP
+             --   IF cDataAux >= cDataAtual THEN
+             --     nTotSelic   := nTotSelic + 1; -- sempre somar 1 no mes atual da selic
+             --     nJuros      := (nValorCorr * nTotSelic /100);
+             --     nSaldo      := nValorCorr + nJuros;
+             --     nValorJur   := nJuros;
+             --     UPDATE P_PROCESSOS_VALORES SET
+             --       PVL_VLR_REA = nSaldo
+             --     ,      PVL_VLR_EXI_REA = (nSaldo * NVL(PVL_PER_EXI,0))/100
+             --     ,      PVL_DTA_REA = SYSDATE
+             --     ,      PVL_VLR_COR = nValorCorr
+             --     ,      PVL_VLR_JUR = nValorJur
+             --     WHERE  PVL_IDE = nIde
+             --     AND    PVL_FLG_ATV = 1;
+             --     COMMIT;
+             --     nSaldo := 0;
+             --     nJuros := 0;
+             --     nValorCorr := 0;
+             --     nValorJur := 0;
+             --     i := 1;
+             --     nJurosD2003:= 0;
+             --     nJurosA2003:= 0;
+             --     nQtdAntes2003:= 0;
+             --     nQtdDepois2003:= 0;
+             --     nTotSelic:= 0;
+             --     EXIT;
+             --   ELSE
+             --     IF I = 1 THEN
+             --         nValorCorr := (nValor / nValorAux) * nValorHoje;
+             --         nSaldo := nValorCorr;
+                      --obter juros selic do mes
+             --         cDataSELIC := SUBSTR(cDataAux,5,2)||'/'||SUBSTR(cDataAux,1,4);
+             --         OPEN  CUR_VALOR_SELIC(cDataSELIC);
+             --         FETCH CUR_VALOR_SELIC INTO nValorSELIC;
+             --         IF CUR_VALOR_SELIC%NOTFOUND THEN
+             --            SELECT TO_CHAR(MAX(TO_DATE('01/'||REA_DTA)),'MM/YYYY')
+             --            INTO   cDataMax
+             --            FROM   P_REAJUSTES
+             --            WHERE  REA_IND_IDE = 64;
+             --         END IF;
+             --         nTotSelic := 0;
+             --      ELSE
+             --         cDataSELIC := SUBSTR(cDataAux,5,2)||'/'||SUBSTR(cDataAux,1,4);
+             --         OPEN  CUR_VALOR_SELIC(cDataSELIC);
+             --         FETCH CUR_VALOR_SELIC INTO nValorSELIC;
+             --         IF CUR_VALOR_SELIC%NOTFOUND THEN
+             --            SELECT TO_CHAR(MAX(TO_DATE('01/'||REA_DTA)),'MM/YYYY')
+             --            INTO   cDataMax
+             --            FROM   P_REAJUSTES
+             --            WHERE  REA_IND_IDE = 64;
+             --         END IF;
+                      -- acumula os indices selic da data de referencia até o mes atual - 1
+             --          nTotSelic := nTotSelic + nValorSELIC;
+             --    	 END IF;
+             --      cDataAux := TO_CHAR(ADD_MONTHS(TO_DATE('01'||'/'||SUBSTR(cDataAux,5,2)||'/'||SUBSTR(cDataAux,1,4),'DD/MM/YYYY'),1),'YYYYMM');
+             --      i := i + 1;
+             --      CLOSE CUR_VALOR_SELIC;
+             --   END IF;
+             --   END LOOP;
+        
+            --ELSE
+             -- CALCULO DO REAJUSTE PELO INDICE IGPM
+             -- JUROS DE 0,5% ATÉ 01/2003 E 1% A PARTIR DE 01/2003
+             --IF CUR_VALOR%FOUND AND (CUR_VALOR_HOJE%FOUND OR CUR_VALOR_ANT%FOUND)
+             --AND  nIdvIde = 5 THEN
+             --nok:= 5;
+             --nValorCorr:= nValor;
+             -- LOOP
+             -- IF cDataAux >= cDataAtual THEN
+             --   nJurosA2003 := (nValorCorr * 0.5 / 100 * nQtdAntes2003);
+             --   nJurosD2003 := (nValorCorr * 1  / 100 * nQtdDepois2003);
+             --   nJuros      := nJurosD2003 + nJurosA2003;
+             --   nSaldo      := nValorCorr + nJuros;
+             --   nValorJur   := nJuros;
+             --   UPDATE P_PROCESSOS_VALORES SET
+             --          PVL_VLR_REA = nSaldo
+             --   ,      PVL_VLR_EXI_REA = (nSaldo * NVL(PVL_PER_EXI,0))/100
+             --   ,      PVL_DTA_REA = SYSDATE
+             --   ,      PVL_VLR_COR = nValorCorr
+             --   ,      PVL_VLR_JUR = nJuros
+             --   WHERE  PVL_IDE = nIde
+             --   AND    PVL_FLG_ATV = 1;
+             --   COMMIT;
+             --   nSaldo := 0;
+             --   nJuros := 0;
+             --   nValorCorr := 0;
+             --  nValorJur := 0;
+             --   i := 1;
+             --   nJurosD2003:= 0;
+             --   nJurosA2003:= 0;
+             --   nQtdAntes2003:= 0;
+             --   nQtdDepois2003:= 0;
+             --   EXIT;
+             -- ELSE
+             --   cDataIGPM := SUBSTR(cDataAux,5,2)||'/'||SUBSTR(cDataAux,1,4);
+             --   OPEN  CUR_VALOR_IGPM(cDataIGPM);
+             --   FETCH CUR_VALOR_IGPM INTO nValorIGPM;
+             --   IF CUR_VALOR_IGPM%NOTFOUND THEN
+             --     SELECT TO_CHAR(MAX(TO_DATE('01/'||REA_DTA)),'MM/YYYY')
+             --     INTO   cDataMax
+             --     FROM   P_REAJUSTES
+             --     WHERE  REA_IND_IDE = 61;
+             --   END IF;
+             --   nValorCorr := nValorCorr + (nValorCorr * nValorIGPM /100);
+             --   IF cDataAux < '200301' THEN
+             --     nQtdAntes2003:= nQtdAntes2003 + 1;
+             --   ELSE
+             --     nQtdDepois2003:= nQtdDepois2003 + 1;
+             --   END IF;
+             --   cDataAux := TO_CHAR(ADD_MONTHS(TO_DATE('01'||'/'||SUBSTR(cDataAux,5,2)||'/'||SUBSTR(cDataAux,1,4),'DD/MM/YYYY'),1),'YYYYMM');
+             --   i := i + 1;
+             --   CLOSE CUR_VALOR_IGPM;
+             -- END IF;
+             --END LOOP;
+             ELSE
+                -- reajuste pelo índice cível com 0,5% de juros (default)
+                IF CUR_VALOR%FOUND AND (CUR_VALOR_HOJE%FOUND OR CUR_VALOR_ANT%FOUND) THEN
+                 LOOP
+                  IF cDataAux > cDataAtual THEN
+                    UPDATE P_PROCESSOS_VALORES SET
+                    PVL_VLR_REA = nSaldo
+                    ,      PVL_VLR_EXI_REA = (nSaldo * NVL(PVL_PER_EXI,0))/100
+                    ,      PVL_DTA_REA = SYSDATE
+                    ,      PVL_VLR_COR = nValorCorr, PVL_VLR_JUR = nValorJur
+                    WHERE  PVL_IDE = nIde
+                    AND    PVL_FLG_ATV = 1;
+                    COMMIT;
+                    nSaldo := 0;
+                    nJuros := 0;
+                    nValorCorr := 0;
+                    nValorJur := 0;
+                    i := 1;
+                    nJurosD2003:= 0;
+                    nJurosA2003:= 0;
+                    nQtdAntes2003:= 0;
+                    nQtdDepois2003:= 0;
+                    EXIT;
+                  ELSE
+                    IF I = 1 THEN
+                      nValorCorr := (nValor / nValorAux) * nValorHoje;
+                      nJuros := (nValorCorr * 0.5) / 100;
+                      nSaldo := nValorCorr;
+                    ELSE
+                      nSaldo := nSaldo + nJuros;
+                      nValorJur := NVL(nValorJur,0) + nJuros;
+                    END IF;
+                    cDataAux := TO_CHAR(ADD_MONTHS(TO_DATE('01'||'/'||SUBSTR(cDataAux,5,2)||'/'||SUBSTR(cDataAux,1,4),'DD/MM/YYYY'),1),'YYYYMM');
+                    i := i + 1;
+                  END IF;
+                  END LOOP;
+            END IF;
+            END IF;
+          END IF;
+      
+          CLOSE CUR_VALOR;
+    
+        CLOSE CUR_VALOR_HOJE;
+    
+        IF CUR_VALOR_ANT%ISOPEN THEN
+          CLOSE CUR_VALOR_ANT;
+        END IF;
+    end if;
+  END LOOP;
+
+  EXCEPTION
+    WHEN OTHERS THEN
+	  IF nProIde > 0 THEN
+	    RAISE_APPLICATION_ERROR(-20002,'Ide do processo: '||TO_CHAR(nProIde)||' oraerro: '||SQLCODE||'-'||SQLERRM);
+    ELSE
+		  RAISE_APPLICATION_ERROR(-20002,'Ide (P_PROCESSOS_VALORES): '||TO_CHAR(nIde)||' oraerro: '||SQLCODE||'-'||SQLERRM);
+	  END IF;
+
+END PREAJUSTE;
+ 
