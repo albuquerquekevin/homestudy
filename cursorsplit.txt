@@ -2,23 +2,27 @@ SELECT REGEXP_SUBSTR('1,23,3,36','[^,]+', 1, LEVEL) IDE_SUBTIPO FROM DUAL
                 CONNECT BY REGEXP_SUBSTR('1,23,3,36', '[^,]+', 1, LEVEL) IS NOT NULL;
 --funcao split
 
-DECLARE
+SET SERVEROUTPUT ON;
 
-CURSOR sub_tipos_cursor IS 
-SELECT REGEXP_SUBSTR('5,8,9,55,66','[^,]+', 1, LEVEL) IDE_SUBTIPO FROM DUAL
-                CONNECT BY REGEXP_SUBSTR('5,8,9,55,66', '[^,]+', 1, LEVEL) IS NOT NULL;
-       sub_tipo sub_tipos_cursor%ROWTYPE;
-BEGIN
-    
-  OPEN sub_tipos_cursor;
+DECLARE
+PSTA_IDE_ARRAY VARCHAR2(30) := '1,2,4,6,99,10';
+
+CURSOR SUBTIPO_CURSOR IS 
+SELECT REGEXP_SUBSTR(PSTA_IDE_ARRAY,'[^,]+', 1, LEVEL) IDE_SUBTIPO FROM DUAL
+                CONNECT BY REGEXP_SUBSTR(PSTA_IDE_ARRAY, '[^,]+', 1, LEVEL) IS NOT NULL;
+       VSUBTIPO SUBTIPO_CURSOR%ROWTYPE;
+BEGIN    
+
+  OPEN SUBTIPO_CURSOR;
   LOOP
-    FETCH sub_tipos_cursor
-    INTO sub_tipo;
-    dbms_output.put_line('O sub tipo é ' || sub_tipo);
-    EXIT WHEN sub_tipos_cursor%NOTFOUND;
+    FETCH SUBTIPO_CURSOR
+    INTO VSUBTIPO;    
+    EXIT WHEN SUBTIPO_CURSOR%NOTFOUND;
+    
+    DBMS_OUTPUT.PUT_LINE(VSUBTIPO.IDE_SUBTIPO);
   END LOOP;
-  IF sub_tipos_cursor%ISOPEN THEN
-    CLOSE sub_tipos_cursor;
+  IF SUBTIPO_CURSOR%ISOPEN THEN
+    CLOSE SUBTIPO_CURSOR;
   END IF;
 END;
 --teste com cursor
