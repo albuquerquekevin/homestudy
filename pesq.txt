@@ -1,0 +1,267 @@
+@model List<TozziniFreire.Processos.MvcApp.Models.PesqGeralModel>
+<script type="text/javascript">
+    $(function () {
+        $('.tablesorter').tablesorter();
+        document.getElementById('txtPesquisarSubTipo').focus();
+        var checks = document.querySelectorAll('.tabela-subtipos label.mdl-checkbox');
+        checks[0].MaterialCheckbox.disable();
+        componentHandler.upgradeDom();
+    });
+        
+    //LAYOUT ANTIGO
+    //$(document).on('click', 'a.deleteChip', function () {
+    //    var descr = $(this).attr('descr');
+    //    var num = $(this).attr('num');
+    //    var descrDisplay = descr + '\n';
+    //    var arrayindx = subIdsArray.indexOf(num);
+    //    var arraydescr = subNomesArray.indexOf(descr);
+
+    //    document.getElementById('chip-' + num).remove();
+    //    $('#subTipoId' + num).prop('checked', false);
+    //    subIdsArray.splice(arrayindx, 1);
+    //    subNomesArray.splice(arraydescr, 1);
+    //    subNomesArrayDisplay = subNomesArrayDisplay.replace(descrDisplay, '');
+    //})
+
+    $(document).on('click', 'a.deleteChip', function () {
+        var num = $(this).attr('num');
+        var descr = $(this).attr('descr');
+        
+        DeletarSubTipo(num, descr)
+        document.querySelector('#subtipoId-' + num + ' td label.mdl-checkbox').MaterialCheckbox.uncheck();
+        $('#subtipoId-' + num + ' td label.mdl-checkbox').removeClass('is-checked');
+        $('#subtipoId-' + num).removeClass('is-selected');
+        componentHandler.upgradeDom();
+    })
+
+    function PesquisarSubTipo() {
+        var tipoId = $('#cTipoAgenda').val()
+        var termo = $("#txtPesquisarSubTipo").val();
+        PesqSubTipo(tipoId, termo, true);
+    }
+
+    function CloseSubTipo() {
+        $("#dialogPesq2").dialog("close");
+        modalSubTipo.fecharModal();
+    }
+
+    function AdicionarSubTipo(num, descr) {
+        var descrDisplay = descr + '\n';
+
+        subIdsArray.push(num);
+        subNomesArray.push(descr);
+        subNomesArrayDisplay += descrDisplay;
+        criarChip(num, descr);
+    }
+
+    function DeletarSubTipo(num, descr) {
+        var arrayindx = subIdsArray.indexOf(num);
+
+        if (arrayindx > -1) {
+            var descrDisplay = descr + '\n';
+            var arraydescr = subNomesArray.indexOf(descr);
+
+            subIdsArray.splice(arrayindx, 1);
+            subNomesArray.splice(arraydescr, 1);
+            subNomesArrayDisplay = subNomesArrayDisplay.replace(descrDisplay, '');
+            ApagarChip(num);
+        }
+    }
+
+    $(document).on('click', '.item-retorno-pesqSubTipo td label.mdl-checkbox', function () {
+        var parentSub = $(this).parent().parent();
+        var num = parentSub.attr('num');
+        var descr = parentSub.attr('descr');
+        var arrayindx = subIdsArray.indexOf(num);
+
+        if (!parentSub.hasClass('is-selected')) {
+            if (arrayindx < 0)
+                AdicionarSubTipo(num, descr);
+        }
+        else
+            DeletarSubTipo(num, descr);
+        
+        componentHandler.upgradeDom();
+    })
+
+    // LAYOUT ANTIGO
+    //$('.item-retorno-pesqSubTipo').click(function () {
+    //    var num = $(this).attr('num');
+    //    var descr = $(this).attr('descr');
+    //    var descrDisplay = descr + '\n';
+
+    //    var arrayindx = subIdsArray.indexOf(num);
+    //    var arraydescr = subNomesArray.indexOf(descr);
+
+    //    if (arrayindx > -1) {
+    //        subIdsArray.splice(arrayindx, 1);
+    //        ApagarChip(num);
+    //    }
+    //    else {
+    //        subIdsArray.push(num);
+    //        criarChip(num, descr);
+    //    }
+
+    //    if (arraydescr > -1) {
+    //        subNomesArray.splice(arraydescr, 1);
+    //        subNomesArrayDisplay = subNomesArrayDisplay.replace(descrDisplay, '');
+    //    }
+    //    else {
+    //        subNomesArray.push(descr);
+    //        subNomesArrayDisplay += descrDisplay;
+    //    }
+    //})
+
+    function criarChip(num, descr) {
+        var chip = document.createElement('span');
+        chip.classList.add('mdl-chip', 'mdl-chip--deletable');
+        chip.setAttribute('id', 'chip-' + num);
+        chip.innerHTML = `<span class="mdl-chip__text">` + descr + `</span>
+                          <a class="deleteChip mdl-chip__action" descr="` + descr + `" num="` + num + `"> <i class="material-icons">cancel</i></a>`;
+        document.getElementById('chips-container').appendChild(chip);
+    }
+    
+    function ApagarChip(num) {
+        document.getElementById('chip-' + num).remove();
+    }
+
+    function InserirSubTipo() {
+        $("#cSubTipoAgenda").val(subIdsArray);
+        $('#SubTipoAgenda').val(subNomesArray);
+        $('#SubTipoAgenda').attr('aria-readonly', true).attr('title', subNomesArrayDisplay);
+
+        if (subIdsArray.length > 0) {            
+            $("#SubTipoAgenda").parent().addClass("is-upgraded is-dirty");
+            $('#SubTipoLabel').text('Sub-Tipo de Agenda (' + subIdsArray.length + ')');
+        }
+        else {
+            $("#SubTipoAgenda").parent().removeClass("is-upgraded is-dirty");
+            $('#SubTipoLabel').text('Sub-Tipo de Agenda');
+        }
+
+        CloseSubTipo();
+    }
+
+    jQuery(function () {
+        var delay = (function () {
+            var timer = 0;
+            return function (callback, ms) {
+                clearTimeout(timer);
+                timer = setTimeout(callback, ms);
+            };
+        })();
+
+        $('#txtPesquisarSubTipo').keyup(function () {
+            delay(function () {
+                PesquisarSubTipo();
+            }, 300);
+        });
+
+    });
+
+    $('#cancelarSubTipo').click(function () {
+        subIdsArray = [];
+        subNomesArray = [];
+        subNomesArrayDisplay = '';
+    })
+
+    $('.inserirFecharSubTipo').click(function (){
+        InserirSubTipo();
+    });
+
+    if (!(typeof (componentHandler) == 'undefined')) {
+        componentHandler.upgradeAllRegistered();
+    }
+</script>
+<div class="mdl-grid subtipo-grid" style="height: auto;">
+    <div class="mdl-cell mdl-cell--12-col mdl-cell--8-col-tablet mdl-cell--4-col-phone">
+        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+            <input class="mdl-textfield__input" type="text" id="txtPesquisarSubTipo">
+        </div>
+        <input type="button" id="btnPesquisarSub" rel=@ViewBag.Opcao value="Pesquisar" onclick="PesquisarSubTipo();" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent" />
+    </div>
+
+        @if (Model != null)
+        {
+            <div data-simplebar class="scrollGrid mdl-cell--12-col mdl-cell--8-col-tablet mdl-cell--4-col-phone">
+                <table class="tabela-subtipos mdl-data-table mdl-js-data-table mdl-data-table--selectable mdl-shadow--2dp mdl-cell--12-col mdl-cell--8-col-tablet mdl-cell--4-col-phone" style="-ms-overflow-y: scroll; overflow-y: scroll;">
+                    <thead>
+                        <tr>
+                            <th class="mdl-data-table__cell--non-numeric">@Model[0].nColuna1</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (int i = 2; i < Model.Count; i++)
+                        {
+                            <tr id="subtipoId-@Model[i].codigo1" class="item-retorno-pesqSubTipo" num="@Model[i].codigo1" descr="@Model[i].descricao1">
+                                <td class="mdl-data-table__cell--non-numeric">@Model[i].descricao1</td>
+                            </tr>
+                        }
+
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <p style="margin-top: 20px;">Não foi encontrado nenhum item para essa pesquisa!</p>
+        }
+        @*LAYOUT ANTIGO*@
+        @*<div class="mdl-cell mdl-cell--12-col mdl-cell--8-col-tablet mdl-cell--4-col-phone"
+             style="margin-top: -7%;">
+        @if (Model != null)
+        {
+            if (Model.Count > 1)
+            {
+                <div class="linha-tabela">
+                    <ul class="lista-desktop linha-header mdl-layout--large-screen-only" style="padding-left: 0px;">
+                        <div class="mdl-grid" style="max-height: 58px;">
+                            <li data-ord="1" class="mdl-cell mdl-cell--6-col">
+                                @Model[0].nColuna1
+                            </li>
+                            @if (Model[0].nColuna2 != null)
+                            {
+                                <li data-ord="2" class="mdl-cell mdl-cell--6-col">
+                                    @Model[0].nColuna2
+                                </li>
+                            }
+                        </div>
+                    </ul>
+                    <div>
+                        <ul class="lista-container" style="height: 300px; padding-left: 0px; -ms-overflow-y: scroll;
+                        overflow-y: scroll;">
+                            @for (int i = 2; i < Model.Count; i++)
+                            {
+                                <li rel='@Model[i].codigo1|@Model[i].descricao1|@Model[i].codigo2|@Model[i].descricao2|@Model[i].codigo3|@Model[i].indiceReajuste|@ViewBag.Opcao|@Model[0].total' class="tdSeleciona item-container">
+                                    <div class="mdl-layout--large-screen-only">
+                                        <ul class="lista-desktop mdl-grid" style="font-size: 12px; height: auto;">
+                                            <li data-ord="1" class="mdl-cell mdl-cell--6-col">
+                                                @Html.CheckBox("subTipoId" + Model[i].codigo1, new { Class = "mdl-checkbox__input, item-retorno-pesqSubTipo", num = Model[i].codigo1, descr = Model[i].descricao1 })
+                                                @Model[i].descricao1
+                                            </li>
+                                            @if (Model[i].codigo2 != null)
+                                            {
+                                                <li data-ord="2" class="mdl-cell mdl-cell--6-col">
+                                                    @Model[i].descricao2
+                                                </li>
+                                            }
+                                        </ul>
+                                    </div>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <p style="margin-top: 20px;">Não foi encontrado nenhum item para essa pesquisa!</p>
+            }
+        }
+    </div>*@
+    <div id="chips-container">
+    </div>
+    <div class="mdl-cell mdl-cell--12-col mdl-cell--8-col-tablet mdl-cell--4-col-phone">
+        Total de registros: @Model[0].total
+    </div>
+</div>

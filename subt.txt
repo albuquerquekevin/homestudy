@@ -1,0 +1,710 @@
+@model TozziniFreire.Processos.MvcApp.Models.AgendaModel
+@{
+    ViewBag.Title = "Novo";
+}
+<script src="../../Scripts/jquery.unobtrusive-ajax.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var subIdsArray = [];
+    var subNomesArray = [];
+    var subNomesArrayDisplay = '';
+    var msgErro = '';
+    
+    function RefreshAgendas() {
+        if ($("#Identificador").val() != "") {
+            $('#loading').show();
+            $.ajax({
+                url: '../../Agenda/Index?id=' + $("#Identificador").val() + '&status=1',
+                type: 'GET',
+                cache: false,
+                success: function (dados) {
+                    $("#tabs-4").html(dados);
+
+                },
+                error: function (erro) {
+
+                }
+            });
+        }
+    }
+
+    $('#CancelarAgenda').click(function () {
+        RefreshAgendas();
+    })
+
+    function ChangeCheckboxVal(checkboxId) {
+        document.getElementById(checkboxId).value = document.getElementById(checkboxId).checked;
+    }
+
+    function ChecarPreenchimento(jsonData) {
+        var avisoPreencher = '';
+        msgErro = '';
+
+        if (jsonData.Data.trim() == '' || jsonData.Horario.trim() == '' || jsonData.Detalhes.trim() == '' || jsonData.cTipoAgenda.trim() == '' || jsonData.cResponsavel.trim() == '' || jsonData.cRevisor.trim() == '' || jsonData.SubTipoIds.length < 1) {
+            if (jsonData.Data.trim() == '')
+                avisoPreencher += '<br>-Informe a data da agenda!';
+
+            if (jsonData.Horario.trim() == '')
+                avisoPreencher += '<br>-Informe o horário da agenda!';
+
+            if (jsonData.Detalhes.trim() == '')
+                avisoPreencher += '<br>-Informe a descrição da agenda!';
+
+            if (jsonData.cTipoAgenda.trim() == '')
+                avisoPreencher += '<br>-Informe o tipo de agenda!';
+
+            if (jsonData.cResponsavel.trim() == '')
+                avisoPreencher += '<br>-Informe o responsável!';
+
+            if (jsonData.cRevisor.trim() == '')
+                avisoPreencher += '<br>-Informe o revisor!';     
+
+            if (jsonData.cTipoAgenda.trim() == 361 && subIdsArray.length < 1) {
+                avisoPreencher += '<br>-O Tipo de agenda "Prazo GCT" requer pelo menos 1 Sub-Tipo. Caso não aplicável, utilize o Sub-Tipo "ANÁLISE / MANIF."';
+            }
+        }
+        if (avisoPreencher == '')
+            return true;
+        else {
+            msgErro = 'Atenção: a agenda possui dados inválidos!<br>';
+            msgErro += avisoPreencher;
+            return false;
+        }
+
+    }
+
+    var modalObjects = function (m) {
+        var dialog = document.getElementById(m);
+        var showModal = function () {
+            this.dialog.showModal();
+        };
+        var registrarModal = function () {
+            dialogPolyfill.registerDialog(this.dialog);
+        };
+        var fecharModal = function () {
+            this.dialog.close();
+        };
+
+        return {
+            dialog: dialog,
+            showModal: showModal,
+            registrarModal: registrarModal,
+            fecharModal: fecharModal
+        }
+    }
+
+    var modalObjectsSubTipo = function (m) {
+        var dialog = document.getElementById(m);
+        var showModal = function () {
+            this.dialog.showModal();
+        };
+        var registrarModal = function () {
+            dialogPolyfill.registerDialog(this.dialog);
+        };
+        var fecharModal = function () {
+            this.dialog.close();
+        };
+
+        return {
+            dialog: dialog,
+            showModal: showModal,
+            registrarModal: registrarModal,
+            fecharModal: fecharModal
+        }
+    }
+
+    var modalP;
+    var modalSubTipo;
+    var modalAviso = new modalObjects('aviso');
+    modalAviso.registrarModal();
+
+    $('.closeA').click(function () {
+        modalAviso.fecharModal();
+    });
+
+    $(document).ready(function () {
+        modalP = new modalObjects('dialogPesqAgenda');
+        modalP.registrarModal();
+
+        $('.closeAgenda').click(function () {
+            modalP.fecharModal();
+        });        
+
+        modalSubTipo = new modalObjectsSubTipo('dialogPesqSubTipo');
+        modalSubTipo.registrarModal();
+
+        $(function () {
+            $("#novoAgenda input[type=submit]").click(function (event) {
+                event.preventDefault();
+
+                var form = document.getElementById("novoAgenda");
+                var jsonData = {};
+                jsonData.Codigo = document.getElementById("Codigo").value;
+                jsonData.Data = document.getElementById("Data").value;
+                jsonData.Horario = document.getElementById("Horario").value;
+                jsonData.Prioritario = document.getElementById("Prioritario").value;
+                jsonData.AgendaAutomatica = document.getElementById("AgendaAutomatica").value;
+                jsonData.Detalhes = document.getElementById("Detalhes").value;
+                jsonData.cProcesso = document.getElementById("cProcesso").value;
+                jsonData.cTipoAgenda = document.getElementById("cTipoAgenda").value;
+                jsonData.TipoAgenda = document.getElementById("TipoAgenda").value;
+                jsonData.cResponsavel = document.getElementById("cResponsavel").value;
+                jsonData.Responsavel = document.getElementById("Responsavel").value;
+                jsonData.cRevisor = document.getElementById("cRevisor").value;
+                jsonData.Revisor = document.getElementById("Revisor").value;
+                jsonData.SubTipoIds = subIdsArray;
+
+                var formOk = ChecarPreenchimento(jsonData);
+                if (formOk) {
+                    var data = JSON.stringify(jsonData);
+                    $.ajax({
+                        contentType: "application/json; charset=utf-8",
+                        type: "POST",
+                        url: "../../Agenda/Novo",
+                        dataType: "json",
+                        data: data,
+                        success: function (dados) {
+                            if (dados.Sucesso == true) {
+                                modalNovoAgenda.fecharModal();
+                                modalAviso.showModal();
+                                $('.aviso').html('Agenda inserida com sucesso!');
+                                $('#aviso').css('top', '0');
+                            }
+                            else {
+                                modalAviso.showModal();
+                                $('.aviso').html(dados.msg);
+                                $('#aviso').css('top', '0');
+                            }
+                        },
+                        error: function (dados) {
+                            modalAviso.showModal();
+                            $('.aviso').html(dados.msg);
+                            $('#aviso').css('top', '0');
+                        }
+                    });
+
+                    $("#cSubTipoAgenda").val(subIdsArray);
+                    $('#SubTipoAgenda').val(subNomesArray);
+                }
+                else {
+                    modalAviso.showModal();
+                    $('.aviso').html(msgErro);
+                    $('#aviso').css('top', '0');
+                }
+            });
+        });
+
+        $("#Data").datepicker({ dateFormat: 'dd/mm/yy',
+            dayNames: ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'],
+            dayNamesMin: ['D', 'S', 'T', 'Q', 'Q', 'S', 'S', 'D'],
+            dayNamesShort: ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'],
+            monthNames: ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'],
+            monthNamesShort: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
+            nextText: 'Próximo',
+            prevText: 'Anterior'
+        });
+
+        $("#Data").mask('99/99/9999');
+
+        $("#Data").change(function () {
+            $("#Horario").focus();
+        });
+
+        $("#TipoAgenda").change(function () {
+            $("#cTipoAgenda").val('');
+            $("#cSubTipoAgenda").val('');
+            $("#TipoAgenda").css('background-color', '#FFFFFF');
+            $("#SubTipoAgenda").css('background-color', '#FFFFFF');
+        });
+
+        $("#SubTipoAgenda").change(function () {
+            $("#cSubTipoAgenda").val('');
+            $("#SubTipoAgenda").css('background-color', '#FFFFFF');
+        });
+
+        $("#Responsavel").change(function () {
+            $("#cResponsavel").val('');
+            $("#Responsavel").css('background-color', '#FFFFFF');
+        });
+
+        $("#Revisor").change(function () {
+            $("#cRevisor").val('');
+            $("#Revisor").css('background-color', '#FFFFFF');
+        });
+
+        $("#Detalhes").focus();
+
+        $("#Horario").mask("99:99");
+
+        if ($('#Responsavel').val() != '')
+            $('#Responsavel').parent().addClass('is-upgraded is-dirty');
+
+        if ($('#Revisor').val() != '')
+            $('#Revisor').parent().addClass('is-upgraded is-dirty');
+
+        $('#Data').focusin(function () {
+            $('#Data').parent().addClass('is-upgraded is-dirty');
+        });
+
+        $('#Data').focusout(function () {
+            if ($('#Data').val() == '__/__/____')
+                $('#Data').parent().removeClass('is-upgraded is-dirty');
+        });
+
+        $('#Horario').focusin(function () {
+            $('#Horario').parent().addClass('is-upgraded is-dirty');
+        });
+
+        $('#Horario').focusout(function () {
+            if ($('#Horario').val() == '__:__')
+                $('#Horario').parent().removeClass('is-upgraded is-dirty');
+        });
+
+        $('#TipoAgenda').focusin(function () {
+            $('#TipoAgenda').parent().addClass('is-upgraded is-dirty');
+        });
+
+        $('#TipoAgenda').focusout(function () {
+            if ($('#TipoAgenda').val() == '')
+                $('#TipoAgenda').parent().removeClass('is-upgraded is-dirty');
+        });
+
+        $('#TipoAgenda').keyup(function (e) {
+            if (e.keyCode == 8) {
+                $("#cTipoAgenda").val('');
+                $('#TipoAgenda').val('');
+            }
+        });
+
+        $('#SubTipoAgenda').focusin(function () {
+            $('#SubTipoAgenda').parent().addClass('is-upgraded is-dirty');
+        });
+
+        $('#SubTipoAgenda').focusout(function () {
+            if ($('#SubTipoAgenda').val() == '')
+                $('#SubTipoAgenda').parent().removeClass('is-upgraded is-dirty');
+        });
+
+        $('#SubTipoAgenda').keyup(function (e) {
+            if (e.keyCode == 8) {
+                $("#cSubTipoAgenda").val('');
+                $('#SubTipoAgenda').val('');
+            }
+        });
+
+        $('#Responsavel').focusin(function () {
+            $('#Responsavel').parent().addClass('is-upgraded is-dirty');
+        });
+
+        $('#Responsavel').focusout(function () {
+            if ($('#Responsavel').val() == '')
+                $('#Responsavel').parent().removeClass('is-upgraded is-dirty');
+        });
+
+        $('#Responsavel').keyup(function (e) {
+            if (e.keyCode == 8) {
+                $("#cResponsavel").val('');
+                $('#Responsavel').val('');
+            }
+        });
+
+        $('#Revisor').focusin(function () {
+            $('#Revisor').parent().addClass('is-upgraded is-dirty');
+        });
+
+        $('#Revisor').focusout(function () {
+            if ($('#Revisor').val() == '')
+                $('#Revisor').parent().removeClass('is-upgraded is-dirty');
+        });
+
+        $('#Revisor').keyup(function (e) {
+            if (e.keyCode == 8) {
+                $("#cRevisor").val('');
+                $('#Revisor').val('');
+            }
+        });
+
+        $('#Detalhes').focusin(function () {
+            $('#Detalhes').parent().addClass('is-upgraded is-dirty');
+        });
+
+        $('#Detalhes').focusout(function () {
+            if ($('#Detalhes').val() == '')
+                $('#Detalhes').parent().removeClass('is-upgraded is-dirty');
+        });
+
+        $("#Revisor").autocomplete({
+            source: function (request, response) {
+                $.ajax({
+                    url: '../../PesqGeral/Revisor',
+                    type: 'POST',
+                    dataType: 'json',
+                    data: { Prefix: request.term },
+                    success: function (data) {
+                        var obj = $.parseJSON(data);
+                        response($.map(obj, function (item) {
+                            return { label: item.Nome, value: item.Nome, id: item.id };
+                        }))
+                    }
+                })
+            },
+            select: function (event, ui) {
+                $("#cRevisor").val(ui.item.id);
+            },
+            minLength: 3
+        });
+
+        $("#Responsavel").autocomplete({
+            source: function (request, response) {
+                $.ajax({
+                    url: '../../PesqGeral/Responsavel',
+                    type: 'POST',
+                    dataType: 'json',
+                    data: { Prefix: request.term },
+                    success: function (data) {
+                        var obj = $.parseJSON(data);
+                        response($.map(obj, function (item) {
+                            return { label: item.Nome, value: item.Nome, id: item.id };
+                        }))
+                    }
+                })
+            },
+            select: function (event, ui) {
+                $("#cResponsavel").val(ui.item.id);
+            },
+            minLength: 3
+        });
+
+        $("#SubTipoAgenda").autocomplete({
+            source: function (request, response) {
+                $.ajax({
+                    url: '../../PesqGeral/SubTipoAgenda',
+                    type: 'POST',
+                    dataType: 'json',
+                    data: { cTipoAgenda: $("#cTipoAgenda").val(), Prefix: request.term },
+                    success: function (data) {
+                        var obj = $.parseJSON(data);
+                        response($.map(obj, function (item) {
+                            return { label: item.Nome, value: item.Nome, id: item.id };
+                        }))
+                    }
+                })
+            },
+            select: function (event, ui) {
+                $("#cSubTipoAgenda").val(ui.item.id);
+            },
+            minLength: 3
+        });
+
+        $("#TipoAgenda").autocomplete({
+            source: function (request, response) {
+                $.ajax({
+                    url: '../../PesqGeral/TipoAgenda',
+                    type: 'POST',
+                    dataType: 'json',
+                    data: { cArea: $('#cArea').val(), Prefix: request.term },
+                    success: function (data) {
+                        var obj = $.parseJSON(data);
+                        response($.map(obj, function (item) {
+                            return { label: item.Nome, value: item.Nome, id: item.id };
+                        }))
+                    }
+                })
+            },
+            select: function (event, ui) {
+                $("#cTipoAgenda").val(ui.item.id);
+                $("#cProcesso").val($("#Identificador").val());
+            },
+            minLength: 3
+        });
+    });
+
+    function PesqGeral(opcao, cArea, codigo, cliFat, termo) {
+        var title;
+        var param = $('#cArea').val() + "|" + $("#cTipoAgenda").val() + "|\t|" + termo;
+
+        if (opcao == "TipoAgenda")
+            title = "Tipo da Agenda";
+        else if (opcao == "Responsavel")
+            title = "Responsável";
+        else if (opcao == "Revisor")
+            title = "Revisor";
+
+
+        $.ajax({
+            url: '../../PesqGeral/Index?opcao=' + opcao + '&param=' + param,
+            type: 'GET',
+            success: function (dados) {
+                $("#dialogPesqAgenda").css('width', '500');
+                $(".dialogPesq").html(dados);
+                $("#txtPesquisar").val(termo);
+                $('#title_dialogPesq').html(title);
+                if (!$('#dialogPesqAgenda').is(':visible'))
+                    modalP.showModal();
+            },
+            error: function (erro) {
+
+            }
+        });
+    }
+
+    function PreencherSubTipos() {
+        //LAYOUT ANTIGO
+        //for (i = 0; i < subIdsArray.length; i++) {
+        //    $('#subTipoId' + subIdsArray[i]).prop('checked', true);
+        //    criarChip(subIdsArray[i], subNomesArray[i]);
+        //}
+
+        for (i = 0; i < subIdsArray.length; i++) {
+            if (document.querySelector('#subtipoId-' + subIdsArray[i] + ' td label.mdl-checkbox') !== null) {
+                document.querySelector('#subtipoId-' + subIdsArray[i] + ' td label.mdl-checkbox').MaterialCheckbox.check();
+                $('#subtipoId-' + subIdsArray[i] + ' td label.mdl-checkbox').addClass('is-checked');
+                $('#subtipoId-' + subIdsArray[i]).addClass('is-selected');
+            }
+
+            if ($('#chip-' + subIdsArray[i]).length <= 0) {
+                criarChip(subIdsArray[i], subNomesArray[i]);
+            }
+        }
+    }
+
+    function PesqSubTipo(tipoId, termo, inner) {
+        var title = "Sub-Tipo da Agenda";
+
+        if ($('#cTipoAgenda').val() != '') {
+
+            $.ajax({
+                url: '../../PesqGeral/SubTipo?tipoId=' + tipoId + '&pesq=' + termo,
+                type: 'GET',
+                success: function (dados) {
+                    $("#dialogPesqSubTipo").css('width', '500');
+                    $(".dialogPesqSubTipo").html(dados);
+                    $("#txtPesquisarSubTipo").val(termo);
+                    $('#title_dialogPesqSubTipo').html(title);
+                    if (inner == false) {
+                        modalSubTipo.showModal();
+                    }
+                    if (subIdsArray.length > 0) {
+                        PreencherSubTipos();
+                    }
+                },
+                error: function (erro) {
+
+                }
+            });
+        }
+        else {
+            modalAviso.showModal();
+            $('.aviso').html('Selecione um tipo de Agenda!');
+            $('#aviso').css('top', '0');
+        }
+    }
+
+    function UltimosAndamentos() {
+        $.ajax({
+            url: '../../Agenda/UltimosAnd?cProcesso=' + $("#Identificador").val(),
+            type: 'GET',
+            success: function (dados) {
+                if (dados != "") {
+                    $("#Detalhes").val(dados);
+                }
+            },
+            error: function (erro) {
+
+            }
+        });
+    }
+
+    if (!(typeof (componentHandler) == 'undefined')) {
+        componentHandler.upgradeAllRegistered();
+    }
+</script>
+@using (Html.BeginForm("Novo", "Agenda", FormMethod.Post, new { id = "novoAgenda" }))
+{
+    @Html.HiddenFor(model => model.cTipoAgenda)
+    @Html.HiddenFor(model => model.cProcesso)
+    @Html.HiddenFor(model => model.cSubTipoAgenda)
+    @Html.HiddenFor(model => model.cResponsavel)
+    @Html.HiddenFor(model => model.cRevisor)
+    @Html.HiddenFor(model => model.Codigo)
+    
+    if (Model == null)
+    {
+        
+    <div class="mdl-grid">
+        <div class="mdl-cell mdl-cell--12-col mdl-cell--8-col-tablet mdl-cell--4-col-phone">
+            <div class="mdl-grid">
+                <div class="mdl-cell mdl-cell--3-col mdl-cell--3-col-tablet mdl-cell--4-col-phone">
+                    <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                        @Html.TextBoxFor(model => model.Data, new { @maxlength = "10", Class = "mdl-textfield__input" })
+                        <label class="mdl-textfield__label" for="Data">
+                            Data
+                        </label>
+                    </div>
+                </div>
+                <div class="mdl-cell mdl-cell--2-col mdl-cell--1-col-tablet mdl-cell--4-col-phone">
+                    <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                        @Html.TextBoxFor(model => model.Horario, new { Class = "mdl-textfield__input" })
+                        <label class="mdl-textfield__label" for="Horario">
+                            Horário
+                        </label>
+                    </div>
+                </div>
+                <div class="mdl-cell mdl-cell--3-col mdl-cell--4-col-tablet mdl-cell--4-col-phone"
+                     style="margin-top: 5%;">
+                    <label class="mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect" for="Prioritario">
+                        @Html.CheckBox("Prioritario", true, new { Class = "mdl-checkbox__input", onclick = "ChangeCheckboxVal('Prioritario')" })
+                        <span class="mdl-checkbox__label" style="font-size: 11px;">Prioritário</span>
+                    </label>
+                </div>
+                <div class="mdl-cell mdl-cell--4-col mdl-cell--4-col-tablet mdl-cell--4-col-phone"
+                     style="margin-top: 5%;">
+                    <label class="mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect" for="AgendaAutomatica">
+                        @Html.CheckBox("AgendaAutomatica", true, new { Class = "mdl-checkbox__input", onclick = "ChangeCheckboxVal('AgendaAutomatica')" })
+                        <span class="mdl-checkbox__label" style="font-size: 11px;">Agenda Automática</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div class="mdl-cell mdl-cell--12-col mdl-cell--8-col-tablet mdl-cell--4-col-phone"
+            style="margin-top: -12%;">
+            <div class="mdl-grid">
+                <div class="mdl-cell mdl-cell--6-col mdl-cell--4-col-tablet mdl-cell--4-col-phone">
+                    <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                        @Html.TextBoxFor(model => model.TipoAgenda, new { Style = "width: 92%;", Class = "mdl-textfield__input" })
+                        <label class="mdl-textfield__label" for="TipoAgenda">
+                            Tipo de Agenda
+                        </label>
+                        <a href="#" onclick="PesqGeral('TipoAgenda', '', '', '', $('#TipoAgenda').val())">
+                            <img src="../../images/lupa.png" style="margin-top: -17px; float: right;" />
+                        </a>
+                    </div>
+                </div>
+                <div class="mdl-cell mdl-cell--6-col mdl-cell--4-col-tablet mdl-cell--4-col-phone">
+                    <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label" id="subTipoDiv">
+                        @Html.TextBoxFor(model => model.SubTipoAgenda, new { Style = "width: 92%;", Class = "mdl-textfield__input" })
+                        <label class="mdl-textfield__label" id="SubTipoLabel" for="SubTipoAgenda">
+                            Sub-Tipo de Agenda
+                        </label>
+                        <a href="#" onclick="PesqSubTipo($('#cTipoAgenda').val(), '', false)">
+                            <img src="../../images/lupa.png" style="margin-top: -17px; float: right;" />
+                        </a>
+                    </div>
+                    @*<div class="mdl-tooltip mdl-tooltip--large mdl-tooltip--right" id="tooltipSub" for="SubTipoAgenda">
+
+                    </div>*@
+                </div>
+            </div>
+        </div>
+        <div class="mdl-cell mdl-cell--12-col mdl-cell--8-col-tablet mdl-cell--4-col-phone"
+            style="margin-top: -12%;">
+            <div class="mdl-grid">
+                <div class="mdl-cell mdl-cell--6-col mdl-cell--4-col-tablet mdl-cell--4-col-phone">
+                    <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                        @Html.TextBoxFor(model => model.Responsavel, new { Style = "width: 92%;", Class = "mdl-textfield__input" })
+                        <label class="mdl-textfield__label" for="Responsavel">
+                            Responsável</label>
+                        <a href="#" onclick="PesqGeral('Responsavel', '', '', '', $('#Responsavel').val())">
+                            <img src="../../images/lupa.png" style="margin-top: -17px; float: right;" /></a>
+                    </div>
+                </div>
+                <div class="mdl-cell mdl-cell--6-col mdl-cell--4-col-tablet mdl-cell--4-col-phone">
+                    <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                        @Html.TextBoxFor(model => model.Revisor, new { Style = "width: 92%;", Class = "mdl-textfield__input" })
+                        <label class="mdl-textfield__label" for="Revisor">
+                            Revisor</label>
+                        <a href="#" onclick="PesqGeral('Revisor', '', '', '', $('#Revisor').val())">
+                            <img src="../../images/lupa.png" style="margin-top: -17px; float: right;" /></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="mdl-cell mdl-cell--12-col mdl-cell--8-col-tablet mdl-cell--4-col-phone"
+            style="margin-top: -12%;">
+            <div class="mdl-grid">
+                <div class="mdl-cell mdl-cell--12-col mdl-cell--8-col-tablet mdl-cell--4-col-phone">
+                    <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label is-upgraded is-dirty"
+                        style="width: 100%;">
+                        <a href="#" onclick="UltimosAndamentos()" style="color: rgba(1,73,110,1); font-size: 12px;
+                            float: right;">Inserir os últimos 3 andamentos</a>
+                        @Html.TextAreaFor(model => model.Detalhes, new { Style = "height:112px;", Class = "mdl-textfield__input" })
+                        <label class="mdl-textfield__label" for="Detalhes">
+                            Agenda</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="mdl-cell mdl-cell--12-col mdl-cell--8-col-tablet mdl-cell--4-col-phone"
+            style="text-align: center; margin-top: -1%;">
+            <input type="submit" style="background-color: #5cb85c; color: #FFFFFF;" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect"
+                value="Incluir" />
+            <input type="button" style="background-color: #c9302c; color: #FFFFFF;" id="CancelarAgenda" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect"
+                value="Cancelar" onclick="modalNovoAgenda.fecharModal();" />
+        </div>
+    </div>
+    }
+    else
+    {
+    <div class="mdl-grid" style="height: auto;">
+        <div class="mdl-cell mdl-cell--12-col mdl-cell--8-col-tablet mdl-cell--4-col-phone">
+            <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                @Html.TextBoxFor(model => model.Responsavel, new { Style = "width: 92%;", Class = "mdl-textfield__input" })
+                <label class="mdl-textfield__label" for="Responsavel">
+                    Responsável</label>
+                <a href="#" onclick="PesqGeral('Responsavel', '', '', '', $('#Responsavel').val())">
+                    <img src="../../images/lupa.png" style="margin-top: -17px; float: right;" /></a>
+            </div>
+        </div>
+        <div class="mdl-cell mdl-cell--12-col mdl-cell--8-col-tablet mdl-cell--4-col-phone">
+            <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                @Html.TextBoxFor(model => model.Revisor, new { Style = "width: 92%;", Class = "mdl-textfield__input" })
+                <label class="mdl-textfield__label" for="Revisor">
+                    Revisor</label>
+                <a href="#" onclick="PesqGeral('Revisor', '', '', '', $('#Revisor').val())">
+                    <img src="../../images/lupa.png" style="margin-top: -17px; float: right;" /></a>
+            </div>
+        </div>
+        <div class="mdl-cell mdl-cell--12-col mdl-cell--8-col-tablet mdl-cell--4-col-phone"
+            style="text-align: center;">
+            <input type="submit" style="background-color: #5cb85c; color: #FFFFFF;" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect"
+                value="Alterar" />
+            <input type="button" style="background-color: #c9302c; color: #FFFFFF;" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect"
+                value="Cancelar" onclick="modalNovoAgenda.fecharModal();" />
+        </div>
+    </div>
+    }
+}
+<dialog id="dialogPesqAgenda" class="mdl-dialog">
+    <h4 class="mdl-dialog__title" id="title_dialogPesq"></h4>
+    <div class="mdl-dialog__content dialogPesq">
+        <p></p>
+    </div>
+    <div class="mdl-dialog__actions">
+        <form method="dialog">
+        <input type="button" value="OK" class="mdl-button closeAgenda" />
+        </form>
+    </div>
+</dialog>
+<dialog id="dialogPesqSubTipo" class="mdl-dialog">
+    <h4 class="mdl-dialog__title" id="title_dialogPesqSubTipo"></h4>
+    <div class="mdl-dialog__content dialogPesqSubTipo">
+        <p></p>
+    </div>
+    <div class="mdl-dialog__actions">
+        <form method="dialog">
+            <input type="button" style="background-color: #c9302c; color: #FFFFFF;" id="cancelarSubTipo" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect"
+                   value="Cancelar" onclick="modalSubTipo.fecharModal();" />
+            <input type="button" value="Inserir Sub-Tipos" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--colored inserirFecharSubTipo" />
+        </form>
+    </div>
+</dialog>
+<dialog id="aviso" class="mdl-dialog">
+    <h4 class="mdl-dialog__title">Aviso</h4>
+    <div class="mdl-dialog__content aviso">
+        <p></p>
+    </div>
+    <div class="mdl-dialog__actions">
+        <form method="dialog">
+        <input type="button" value="OK" class="mdl-button closeA" />
+        </form>
+    </div>
+</dialog>
