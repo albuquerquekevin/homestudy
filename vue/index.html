@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Meu Vue</title>
+    <script src="https://unpkg.com/vue/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios@0.12.0/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lodash@4.13.1/lodash.min.js"></script>
+    <link rel="stylesheet" type="text/css" media="screen" href="main.css">
+  </head>
+  <body>
+      <div id="app" v-once>
+          <p>
+            {{ message }}
+          </p>
+      </div>
+
+      <div id="app2">
+        <span v-bind:title="message">
+          Para o mouse sobre mim que você vai ver um negócio loko.
+        </span>
+      </div>
+
+      <div id="app3">
+        <p v-if="seen">Agora tu me viste</p>
+      </div>
+
+      <div id="app4">
+        <ol>
+          <li v-for="todo in todos">
+            {{todo.text}}
+          </li>
+        </ol>
+      </div>
+
+      <div id="app5">
+        <p>{{ message }}</p>
+        <button v-on:click="reverseMessage">Inverter Mensagem</button>
+      </div>
+
+      <div id="app6">
+        <p>{{message}}</p>
+        <input v-model="message">
+      </div>
+
+      <div id="app7">
+        <ol>
+          <todo-item
+            v-for="item in groceryList"
+            v-bind:todo="item"
+            v-bind:key="item.id">
+          </todo-item>
+        </ol>
+      </div>
+
+      <div id="app8">
+        <p>{{message}}</p>
+        <p>{{reversedMessage}}</p>
+      </div>
+
+      <div id="watch-example">
+        <p>Me faz uma pergunta de sim/não chuchu <input v-model="question"></p>
+        <p>{{ answer }}</p>
+      </div>      
+
+      <div id="app9"
+        v-bind:style="{ color:activeColor, fontSize: fontSize + 'px' }">classe
+      </div>
+
+      <div id="app10">
+        <p v-if="gender === 'female'">Amapô</p>
+        <p v-else>Cafuçu</p>
+      </div>
+
+    <script type="text/javascript" src="main.js"></script>
+  </body>  
+</html>
